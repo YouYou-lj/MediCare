@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.medicare.controller.MainController"
+            prefWidth="1200" prefHeight="800">
+
+    <!-- 顶部标题栏 -->
+    <top>
+        <HBox styleClass="header" alignment="CENTER_LEFT" spacing="15">
+            <padding>
+                <Insets top="12" right="20" bottom="12" left="20"/>
+            </padding>
+            <Label text="MediCare 智慧医疗门诊管理系统" styleClass="app-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="lblCurrentUser" text="未登录" styleClass="user-info"/>
+            <Button text="退出" onAction="#handleLogout" styleClass="btn-logout"/>
+        </HBox>
+    </top>
+
+    <!-- 左侧导航 -->
+    <left>
+        <VBox styleClass="sidebar" spacing="5" prefWidth="200">
+            <padding>
+                <Insets top="15" right="10" bottom="15" left="10"/>
+            </padding>
+            <Label text="功能导航" styleClass="nav-title"/>
+            <Separator/>
+            <Button text="患者管理" styleClass="nav-btn" maxWidth="Infinity" onAction="#showPatientMgmt"/>
+            <Button text="基础数据" styleClass="nav-btn" maxWidth="Infinity" onAction="#showBasicData"/>
+            <Button text="挂号预约" styleClass="nav-btn" maxWidth="Infinity" onAction="#showRegistration"/>
+            <Button text="医生工作站" styleClass="nav-btn" maxWidth="Infinity" onAction="#showDoctorWorkstation"/>
+            <Button text="病历管理" styleClass="nav-btn" maxWidth="Infinity" onAction="#showMedicalRecord"/>
+            <Button text="药品库存" styleClass="nav-btn" maxWidth="Infinity" onAction="#showPharmacy"/>
+            <Button text="处方管理" styleClass="nav-btn" maxWidth="Infinity" onAction="#showPrescription"/>
+            <Separator/>
+            <Button text="系统设置" styleClass="nav-btn" maxWidth="Infinity" onAction="#showSettings"/>
+        </VBox>
+    </left>
+
+    <!-- 中间内容区 -->
+    <center>
+        <StackPane fx:id="contentPane" styleClass="content-area">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+            <VBox alignment="CENTER" spacing="20">
+                <Label text="欢迎使用 MediCare 智慧医疗门诊管理系统" styleClass="welcome-title"/>
+                <Label text="请从左侧导航选择功能模块" styleClass="welcome-subtitle"/>
+                <HBox spacing="30" alignment="CENTER">
+                    <VBox alignment="CENTER" spacing="5" styleClass="stat-card">
+                        <Label text="今日挂号" styleClass="stat-label"/>
+                        <Label fx:id="lblTodayReg" text="0" styleClass="stat-value"/>
+                    </VBox>
+                    <VBox alignment="CENTER" spacing="5" styleClass="stat-card">
+                        <Label text="候诊人数" styleClass="stat-label"/>
+                        <Label fx:id="lblWaiting" text="0" styleClass="stat-value"/>
+                    </VBox>
+                    <VBox alignment="CENTER" spacing="5" styleClass="stat-card">
+                        <Label text="库存预警" styleClass="stat-label"/>
+                        <Label fx:id="lblStockAlert" text="0" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+        </StackPane>
+    </center>
+
+    <!-- 底部状态栏 -->
+    <bottom>
+        <HBox styleClass="footer" alignment="CENTER_LEFT" spacing="15">
+            <padding>
+                <Insets top="8" right="20" bottom="8" left="20"/>
+            </padding>
+            <Label text="MediCare v1.0.0" styleClass="footer-text"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="lblStatus" text="就绪" styleClass="footer-text"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>
