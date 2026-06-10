@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * MediCare 智慧医疗门诊管理系统 - 主入口
+ * 启动时先显示登录界面，验证成功后进入主界面
  *
  * @author MediCare Team
  * @date 2026-06-10
@@ -22,17 +23,16 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception {
         logger.info("启动 MediCare 系统...");
 
-        Parent root = FXMLLoader.load(getClass().getResource("/fxml/MainView.fxml"));
-        Scene scene = new Scene(root, 1200, 800);
-        scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+        Parent root = FXMLLoader.load(getClass().getResource("/fxml/LoginView.fxml"));
+        Scene scene = new Scene(root, 1000, 700);
+        scene.getStylesheets().add(getClass().getResource("/css/login.css").toExternalForm());
 
-        primaryStage.setTitle("MediCare 智慧医疗门诊管理系统 v1.0");
+        primaryStage.setTitle("MediCare 智慧医疗门诊管理系统 - 登录");
         primaryStage.setScene(scene);
-        primaryStage.setMinWidth(1000);
-        primaryStage.setMinHeight(700);
+        primaryStage.setResizable(false);
         primaryStage.show();
 
-        logger.info("MediCare 主界面已加载");
+        logger.info("登录界面已加载");
     }
 
     @Override

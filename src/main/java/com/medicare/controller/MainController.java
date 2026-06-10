@@ -39,6 +39,11 @@ public class MainController {
     public void initialize() {
         logger.info("主界面控制器初始化完成");
         refreshDashboard();
+        // 显示当前登录用户
+        com.medicare.model.SysUser user = LoginController.getCurrentUser();
+        if (user != null) {
+            lblCurrentUser.setText(user.getRealName() + " (" + user.getUsername() + ")");
+        }
     }
 
     /**
@@ -129,7 +134,20 @@ public class MainController {
     @FXML
     private void handleLogout() {
         logger.info("用户退出登录");
-        // TODO: M2 阶段实现登录界面跳转
-        System.exit(0);
+        LoginController.clearCurrentUser();
+        try {
+            javafx.scene.Node source = (javafx.scene.Node) lblStatus.getScene().getRoot();
+            javafx.stage.Stage stage = (javafx.stage.Stage) source.getScene().getWindow();
+            javafx.scene.Parent root = FXMLLoader.load(getClass().getResource("/fxml/LoginView.fxml"));
+            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1000, 700);
+            scene.getStylesheets().add(getClass().getResource("/css/login.css").toExternalForm());
+            stage.setTitle("MediCare 智慧医疗门诊管理系统 - 登录");
+            stage.setScene(scene);
+            stage.setResizable(false);
+            stage.show();
+        } catch (IOException e) {
+            logger.error("返回登录界面失败", e);
+            System.exit(0);
+        }
     }
 }
