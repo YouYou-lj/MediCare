@@ -65,6 +65,14 @@ public class MedicalRecordService {
         return medicalRecordDAO.findByDoctorToday(doctorId);
     }
 
+    public List<MedicalRecord> listAll() throws SQLException {
+        return medicalRecordDAO.findAll();
+    }
+
+    public List<MedicalRecord> search(String keyword) throws SQLException {
+        return medicalRecordDAO.search(keyword);
+    }
+
     private void validate(MedicalRecord record) {
         if (record == null) throw new IllegalArgumentException("病历信息不能为空");
         if (record.getPatientId() == null) throw new IllegalArgumentException("患者不能为空");

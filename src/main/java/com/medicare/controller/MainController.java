@@ -110,7 +110,7 @@ public class MainController {
     @FXML
     private void showMedicalRecord() {
         lblStatus.setText("病历管理");
-        loadContent("/fxml/DoctorWorkstationView.fxml");
+        loadContent("/fxml/MedicalRecordView.fxml");
     }
 
     @FXML

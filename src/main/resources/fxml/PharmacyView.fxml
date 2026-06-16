@@ -17,10 +17,10 @@
             <HBox spacing="10" alignment="CENTER_LEFT">
                 <Label text="药品库存管理" styleClass="section-title"/>
                 <Region HBox.hgrow="ALWAYS"/>
+                <Button text="新增药品" onAction="#handleNewMedicine" styleClass="btn-success"/>
                 <TextField fx:id="txtSearch" promptText="药品名称/拼音码" prefWidth="180"/>
                 <Button text="查询" onAction="#handleSearch" styleClass="btn-primary"/>
-                <Button text="新增药品" onAction="#handleNewMedicine" styleClass="btn-success"/>
-                <Button text="刷新" onAction="#handleRefresh"/>
+                <Button text="刷新" onAction="#handleRefresh" styleClass="btn-primary"/>
             </HBox>
             <HBox spacing="20" alignment="CENTER_LEFT">
                 <Label fx:id="lblTotalMedicines" text="药品总数: 0"/>
@@ -31,121 +31,27 @@
         </VBox>
     </top>
 
-    <!-- 中间内容 -->
+    <!-- 中间内容：全宽表格 -->
     <center>
-        <SplitPane dividerPositions="0.55">
-            <!-- 左侧：药品列表 -->
-            <VBox spacing="5">
-                <padding>
-                    <Insets top="5" right="10" bottom="5" left="15"/>
-                </padding>
-                <TableView fx:id="tableMedicines" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="colMedId" text="ID" prefWidth="45"/>
-                        <TableColumn fx:id="colMedName" text="药品名称" prefWidth="130"/>
-                        <TableColumn fx:id="colMedSpec" text="规格" prefWidth="80"/>
-                        <TableColumn fx:id="colMedUnit" text="单位" prefWidth="50"/>
-                        <TableColumn fx:id="colMedStock" text="库存" prefWidth="55"/>
-                        <TableColumn fx:id="colMedSafety" text="安全库存" prefWidth="65"/>
-                        <TableColumn fx:id="colMedPrice" text="零售价" prefWidth="65"/>
-                        <TableColumn fx:id="colMedExpiry" text="有效期" prefWidth="90"/>
-                        <TableColumn fx:id="colMedStatus" text="状态" prefWidth="55"/>
-                    </columns>
-                </TableView>
-            </VBox>
-
-            <!-- 右侧：Tab 面板 -->
-            <TabPane tabClosingPolicy="UNAVAILABLE">
-                <!-- Tab 1: 药品信息 -->
-                <Tab text="药品信息">
-                    <VBox spacing="10">
-                        <padding>
-                            <Insets top="10" right="15" bottom="10" left="10"/>
-                        </padding>
-                        <Label text="药品档案编辑" styleClass="form-title"/>
-                        <GridPane vgap="8" hgap="10">
-                            <Label text="药品名称*" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtMedName" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-                            <Label text="规格" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
-                            <TextField fx:id="txtMedSpec" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
-
-                            <Label text="单位" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtMedUnit" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-                            <Label text="零售价" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
-                            <TextField fx:id="txtMedPrice" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
-
-                            <Label text="安全库存" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                            <Spinner fx:id="spinSafetyStock" GridPane.rowIndex="2" GridPane.columnIndex="1" editable="true"/>
-                            <Label text="当前库存" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
-                            <Label fx:id="lblCurrentStock" text="0" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
-
-                            <Label text="有效期" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-                            <DatePicker fx:id="dpMedExpiry" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
-                            <Label text="批号" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
-                            <TextField fx:id="txtMedBatch" GridPane.rowIndex="3" GridPane.columnIndex="3"/>
-
-                            <Label text="拼音码" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtMedPinyin" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
-                            <Label text="生产厂家" GridPane.rowIndex="4" GridPane.columnIndex="2"/>
-                            <TextField fx:id="txtMedManufacturer" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
-
-                            <Label text="状态" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-                            <ComboBox fx:id="cmbMedStatus" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
-                        </GridPane>
-                        <HBox spacing="10" alignment="CENTER_RIGHT">
-                            <Label fx:id="lblMedMessage" text=""/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                            <Button text="保存" onAction="#handleSaveMedicine" styleClass="btn-primary"/>
-                            <Button text="清除" onAction="#handleClearMedicine"/>
-                            <Button text="删除" onAction="#handleDeleteMedicine" styleClass="btn-danger"/>
-                        </HBox>
-                    </VBox>
-                </Tab>
-
-                <!-- Tab 2: 入出库操作 -->
-                <Tab text="入出库">
-                    <VBox spacing="10">
-                        <padding>
-                            <Insets top="10" right="15" bottom="10" left="10"/>
-                        </padding>
-                        <Label text="库存操作" styleClass="form-title"/>
-                        <GridPane vgap="8" hgap="10">
-                            <Label text="操作类型" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                            <ComboBox fx:id="cmbOpType" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-                            <Label text="数量*" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
-                            <Spinner fx:id="spinOpQty" GridPane.rowIndex="0" GridPane.columnIndex="3" editable="true"/>
-
-                            <Label text="批号" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtOpBatch" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-                            <Label text="有效期" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
-                            <DatePicker fx:id="dpOpExpiry" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
-
-                            <Label text="操作人" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtOpOperator" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-                            <Label text="备注" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
-                            <TextField fx:id="txtOpRemark" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
-                        </GridPane>
-                        <HBox spacing="10" alignment="CENTER_RIGHT">
-                            <Label fx:id="lblOpMessage" text=""/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                            <Button text="执行" onAction="#handleStockOp" styleClass="btn-primary"/>
-                        </HBox>
-                        <Separator/>
-                        <Label text="该药品库存日志" styleClass="form-title"/>
-                        <TableView fx:id="tableLogs" VBox.vgrow="ALWAYS">
-                            <columns>
-                                <TableColumn fx:id="colLogTime" text="时间" prefWidth="130"/>
-                                <TableColumn fx:id="colLogType" text="类型" prefWidth="60"/>
-                                <TableColumn fx:id="colLogQty" text="数量" prefWidth="55"/>
-                                <TableColumn fx:id="colLogBatch" text="批号" prefWidth="90"/>
-                                <TableColumn fx:id="colLogOperator" text="操作人" prefWidth="80"/>
-                                <TableColumn fx:id="colLogRemark" text="备注" prefWidth="120"/>
-                            </columns>
-                        </TableView>
-                    </VBox>
-                </Tab>
-            </TabPane>
-        </SplitPane>
+        <VBox spacing="5">
+            <padding>
+                <Insets top="5" right="15" bottom="5" left="15"/>
+            </padding>
+            <TableView fx:id="tableMedicines" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colMedId" text="ID" prefWidth="45"/>
+                    <TableColumn fx:id="colMedName" text="药品名称" prefWidth="140"/>
+                    <TableColumn fx:id="colMedSpec" text="规格" prefWidth="100"/>
+                    <TableColumn fx:id="colMedUnit" text="单位" prefWidth="50"/>
+                    <TableColumn fx:id="colMedStock" text="库存" prefWidth="55"/>
+                    <TableColumn fx:id="colMedSafety" text="安全库存" prefWidth="65"/>
+                    <TableColumn fx:id="colMedPrice" text="零售价" prefWidth="65"/>
+                    <TableColumn fx:id="colMedExpiry" text="有效期" prefWidth="90"/>
+                    <TableColumn fx:id="colMedStatus" text="状态" prefWidth="55"/>
+                    <TableColumn fx:id="colMedAction" text="操作" prefWidth="160"/>
+                </columns>
+            </TableView>
+        </VBox>
     </center>
 
 </BorderPane>

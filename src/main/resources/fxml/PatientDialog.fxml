@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<DialogPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.medicare.controller.PatientDialogController"
+            prefWidth="480" prefHeight="380">
+
+    <content>
+        <GridPane vgap="10" hgap="10">
+            <padding>
+                <Insets top="15" right="15" bottom="10" left="15"/>
+            </padding>
+
+            <Label text="身份证号*" GridPane.rowIndex="0" GridPane.columnIndex="0" minWidth="65"/>
+            <TextField fx:id="txtIdCard" promptText="请输入身份证号" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <Label text="姓名*" GridPane.rowIndex="0" GridPane.columnIndex="2" minWidth="40"/>
+            <TextField fx:id="txtName" promptText="请输入姓名" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+
+            <Label text="性别" GridPane.rowIndex="1" GridPane.columnIndex="0" minWidth="40"/>
+            <ComboBox fx:id="cmbGender" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+            <Label text="出生日期" GridPane.rowIndex="1" GridPane.columnIndex="2" minWidth="65"/>
+            <DatePicker fx:id="dpBirthDate" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+
+            <Label text="电话" GridPane.rowIndex="2" GridPane.columnIndex="0" minWidth="40"/>
+            <TextField fx:id="txtPhone" promptText="请输入联系电话" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+            <Label text="地址" GridPane.rowIndex="2" GridPane.columnIndex="2" minWidth="40"/>
+            <TextField fx:id="txtAddress" promptText="请输入地址" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+
+            <Label text="过敏信息" GridPane.rowIndex="3" GridPane.columnIndex="0" minWidth="65"/>
+            <TextField fx:id="txtAllergy" promptText="请输入过敏信息，无则留空" GridPane.rowIndex="3" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
+
+            <Label fx:id="lblMessage" text="" GridPane.rowIndex="4" GridPane.columnIndex="0" GridPane.columnSpan="4"/>
+        </GridPane>
+    </content>
+
+    <buttonTypes>
+        <ButtonType fx:constant="OK"/>
+        <ButtonType fx:constant="CANCEL"/>
+    </buttonTypes>
+
+</DialogPane>

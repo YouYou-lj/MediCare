@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  弹窗表单模板：GridPane 表单 + OK/Cancel 按钮
+  适用模块：患者新增/编辑、药品新增/编辑、管理员新增/编辑
+  
+  使用说明：
+  1. 复制此文件并重命名为你的弹窗（如 PatientDialog.fxml）
+  2. 修改 fx:controller 指向你的 DialogController 全限定类名
+  3. 修改 GridPane 内的字段标签和 fx:id，与实体类属性对应
+  4. 在 Controller 中实现 setXxx() 和 getXxx() 方法
+-->
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<DialogPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.medicare.controller.YourDialogController"
+            prefWidth="480" prefHeight="380">
+
+    <content>
+        <GridPane vgap="10" hgap="10">
+            <padding>
+                <Insets top="15" right="15" bottom="10" left="15"/>
+            </padding>
+
+            <!-- 第1行 -->
+            <Label text="字段1*" GridPane.rowIndex="0" GridPane.columnIndex="0" minWidth="65"/>
+            <TextField fx:id="txtField1" promptText="提示文字" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <Label text="字段2*" GridPane.rowIndex="0" GridPane.columnIndex="2" minWidth="40"/>
+            <TextField fx:id="txtField2" promptText="提示文字" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+
+            <!-- 第2行 -->
+            <Label text="下拉字段" GridPane.rowIndex="1" GridPane.columnIndex="0" minWidth="40"/>
+            <ComboBox fx:id="cmbField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+            <Label text="日期字段" GridPane.rowIndex="1" GridPane.columnIndex="2" minWidth="65"/>
+            <DatePicker fx:id="dpField" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+
+            <!-- 第3行：跨列长文本 -->
+            <Label text="长文本字段" GridPane.rowIndex="2" GridPane.columnIndex="0" minWidth="65"/>
+            <TextField fx:id="txtLongField" promptText="提示文字" 
+                       GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
+
+            <!-- 错误提示标签 -->
+            <Label fx:id="lblMessage" text="" GridPane.rowIndex="3" GridPane.columnIndex="0" GridPane.columnSpan="4"/>
+        </GridPane>
+    </content>
+
+    <buttonTypes>
+        <ButtonType fx:constant="OK"/>
+        <ButtonType fx:constant="CANCEL"/>
+    </buttonTypes>
+
+</DialogPane>

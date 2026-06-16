@@ -26,27 +26,59 @@ public class MedicalRecordDAO extends BaseDAO<MedicalRecord> {
             "DELETE FROM medical_record WHERE id = ?";
 
     private static final String SQL_SELECT_BY_ID =
-            "SELECT id, registration_id, patient_id, doctor_id, chief_complaint, present_illness, " +
-            "past_history, physical_exam, diagnosis, advice, create_time, update_time " +
-            "FROM medical_record WHERE id = ?";
+            "SELECT mr.id, mr.registration_id, mr.patient_id, mr.doctor_id, mr.chief_complaint, mr.present_illness, " +
+            "mr.past_history, mr.physical_exam, mr.diagnosis, mr.advice, mr.create_time, mr.update_time, " +
+            "p.name AS patientName, d.name AS doctorName " +
+            "FROM medical_record mr " +
+            "LEFT JOIN patient p ON mr.patient_id = p.id " +
+            "LEFT JOIN doctor d ON mr.doctor_id = d.id " +
+            "WHERE mr.id = ?";
 
     private static final String SQL_SELECT_BY_PATIENT =
-            "SELECT id, registration_id, patient_id, doctor_id, chief_complaint, present_illness, " +
-            "past_history, physical_exam, diagnosis, advice, create_time, update_time " +
-            "FROM medical_record WHERE patient_id = ? ORDER BY create_time DESC";
+            "SELECT mr.id, mr.registration_id, mr.patient_id, mr.doctor_id, mr.chief_complaint, mr.present_illness, " +
+            "mr.past_history, mr.physical_exam, mr.diagnosis, mr.advice, mr.create_time, mr.update_time, " +
+            "p.name AS patientName, d.name AS doctorName " +
+            "FROM medical_record mr " +
+            "LEFT JOIN patient p ON mr.patient_id = p.id " +
+            "LEFT JOIN doctor d ON mr.doctor_id = d.id " +
+            "WHERE mr.patient_id = ? ORDER BY mr.create_time DESC";
 
     private static final String SQL_SELECT_BY_REGISTRATION =
-            "SELECT id, registration_id, patient_id, doctor_id, chief_complaint, present_illness, " +
-            "past_history, physical_exam, diagnosis, advice, create_time, update_time " +
-            "FROM medical_record WHERE registration_id = ?";
+            "SELECT mr.id, mr.registration_id, mr.patient_id, mr.doctor_id, mr.chief_complaint, mr.present_illness, " +
+            "mr.past_history, mr.physical_exam, mr.diagnosis, mr.advice, mr.create_time, mr.update_time, " +
+            "p.name AS patientName, d.name AS doctorName " +
+            "FROM medical_record mr " +
+            "LEFT JOIN patient p ON mr.patient_id = p.id " +
+            "LEFT JOIN doctor d ON mr.doctor_id = d.id " +
+            "WHERE mr.registration_id = ?";
 
     private static final String SQL_SELECT_BY_DOCTOR_TODAY =
             "SELECT mr.id, mr.registration_id, mr.patient_id, mr.doctor_id, mr.chief_complaint, " +
             "mr.present_illness, mr.past_history, mr.physical_exam, mr.diagnosis, mr.advice, " +
-            "mr.create_time, mr.update_time, p.name AS patientName " +
+            "mr.create_time, mr.update_time, p.name AS patientName, d.name AS doctorName " +
             "FROM medical_record mr " +
             "LEFT JOIN patient p ON mr.patient_id = p.id " +
+            "LEFT JOIN doctor d ON mr.doctor_id = d.id " +
             "WHERE mr.doctor_id = ? AND DATE(mr.create_time) = CURDATE() " +
+            "ORDER BY mr.create_time DESC";
+
+    private static final String SQL_SELECT_ALL =
+            "SELECT mr.id, mr.registration_id, mr.patient_id, mr.doctor_id, mr.chief_complaint, " +
+            "mr.present_illness, mr.past_history, mr.physical_exam, mr.diagnosis, mr.advice, " +
+            "mr.create_time, mr.update_time, p.name AS patientName, d.name AS doctorName " +
+            "FROM medical_record mr " +
+            "LEFT JOIN patient p ON mr.patient_id = p.id " +
+            "LEFT JOIN doctor d ON mr.doctor_id = d.id " +
+            "ORDER BY mr.create_time DESC";
+
+    private static final String SQL_SEARCH =
+            "SELECT mr.id, mr.registration_id, mr.patient_id, mr.doctor_id, mr.chief_complaint, " +
+            "mr.present_illness, mr.past_history, mr.physical_exam, mr.diagnosis, mr.advice, " +
+            "mr.create_time, mr.update_time, p.name AS patientName, d.name AS doctorName " +
+            "FROM medical_record mr " +
+            "LEFT JOIN patient p ON mr.patient_id = p.id " +
+            "LEFT JOIN doctor d ON mr.doctor_id = d.id " +
+            "WHERE (p.name LIKE ? OR d.name LIKE ? OR mr.diagnosis LIKE ? OR mr.chief_complaint LIKE ?) " +
             "ORDER BY mr.create_time DESC";
 
     public Long insert(MedicalRecord record) throws SQLException {
@@ -80,5 +112,14 @@ public class MedicalRecordDAO extends BaseDAO<MedicalRecord> {
 
     public List<MedicalRecord> findByDoctorToday(Long doctorId) throws SQLException {
         return queryList(SQL_SELECT_BY_DOCTOR_TODAY, doctorId);
+    }
+
+    public List<MedicalRecord> findAll() throws SQLException {
+        return queryList(SQL_SELECT_ALL);
+    }
+
+    public List<MedicalRecord> search(String keyword) throws SQLException {
+        String like = "%" + (keyword != null ? keyword.trim() : "") + "%";
+        return queryList(SQL_SEARCH, like, like, like, like);
     }
 }

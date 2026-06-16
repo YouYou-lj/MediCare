@@ -8,7 +8,7 @@
             fx:controller="com.medicare.controller.RegistrationController"
             prefWidth="1000" prefHeight="700">
 
-    <!-- 顶部：患者搜索 + 排班日期 -->
+    <!-- 顶部：排班日期筛选 -->
     <top>
         <VBox spacing="10">
             <padding>
@@ -20,10 +20,6 @@
                 <DatePicker fx:id="dpWorkDate" promptText="选择日期"/>
                 <ComboBox fx:id="cmbDepartmentFilter" promptText="全部科室" prefWidth="150"/>
                 <Button text="查询号源" onAction="#handleSearchSchedule" styleClass="btn-primary"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <TextField fx:id="txtPatientSearch" promptText="身份证号/姓名" prefWidth="180"/>
-                <Button text="查找患者" onAction="#handleSearchPatient" styleClass="btn-primary"/>
-                <Label fx:id="lblSelectedPatient" text="未选择患者" styleClass="user-info"/>
             </HBox>
             <Separator/>
         </VBox>

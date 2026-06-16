@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="30.0.0">
+  <diagram name="tableview-binding">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="TableView 数据绑定流程" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=28;fontStyle=1;fontColor=#1a1a2e;" vertex="1" parent="1">
+          <mxGeometry x="300" y="30" width="600" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="entity" value="实体类 POJO&#xa;SimpleStringProperty&#xa;SimpleIntegerProperty&#xa;SimpleObjectProperty ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontSize=14;fontStyle=1;fontColor=#0d47a1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="150" width="180" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="pvf" value="PropertyValueFactory&#xa;&amp;lt;Patient, String&amp;gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#388e3c;fontSize=14;fontStyle=1;fontColor=#1b5e20;" vertex="1" parent="1">
+          <mxGeometry x="340" y="150" width="180" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="column" value="TableColumn&amp;lt;T, V&amp;gt;&#xa;setCellValueFactory(...)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#f57c00;fontSize=14;fontStyle=1;fontColor=#e65100;" vertex="1" parent="1">
+          <mxGeometry x="600" y="150" width="180" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="tableview" value="TableView&amp;lt;T&amp;gt;&#xa;getColumns().add(col)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;fontSize=14;fontStyle=1;fontColor=#4a148c;" vertex="1" parent="1">
+          <mxGeometry x="860" y="150" width="180" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ui" value="界面显示&#xa;渲染表格数据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eceff1;strokeColor=#546e7a;fontSize=14;fontStyle=1;fontColor=#263238;" vertex="1" parent="1">
+          <mxGeometry x="860" y="320" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="属性名" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#666666;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="entity" target="pvf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="按属性名反射取值" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#666666;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="pvf" target="column">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="绑定列" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#666666;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="column" target="tableview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="设置数据项&#xa;ObservableList" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#666666;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="tableview" target="ui">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="warningBox" value="⚠ 警告&#xa;TableColumn&amp;lt;T, V&amp;gt; 的泛型 V&#xa;必须与实体属性类型一致&#xa;否则运行时会抛出 ClassCastException" style="shape=callout;whiteSpace=wrap;html=1;fillColor=#ffebee;strokeColor=#c62828;fontColor=#b71c1c;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="320" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="eWarn" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeColor=#c62828;dashed=1;dashPattern=8 8;endArrow=classic;" edge="1" parent="1" source="warningBox" target="column">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="code" value="示例：colName.setCellValueFactory(new PropertyValueFactory&amp;lt;Patient, String&amp;gt;(&amp;quot;name&amp;quot;));" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontColor=#555555;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="200" y="480" width="800" height="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

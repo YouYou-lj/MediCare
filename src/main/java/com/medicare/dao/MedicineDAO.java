@@ -25,6 +25,9 @@ public class MedicineDAO extends BaseDAO<Medicine> {
     private static final String SQL_UPDATE_STOCK =
             "UPDATE medicine SET stock = stock + ? WHERE id = ?";
 
+    private static final String SQL_UPDATE_STOCK_INFO =
+            "UPDATE medicine SET stock = stock + ?, batch_no = ?, expiry_date = ? WHERE id = ?";
+
     private static final String SQL_DELETE =
             "DELETE FROM medicine WHERE id = ?";
 
@@ -81,8 +84,16 @@ public class MedicineDAO extends BaseDAO<Medicine> {
         return executeUpdate(conn, SQL_UPDATE_STOCK, delta, medicineId);
     }
 
+    public int updateStockAndInfo(Connection conn, Long medicineId, Integer delta, String batchNo, java.time.LocalDate expiryDate) throws SQLException {
+        return executeUpdate(conn, SQL_UPDATE_STOCK_INFO, delta, batchNo, expiryDate, medicineId);
+    }
+
     public int delete(Long id) throws SQLException {
         return executeUpdate(SQL_DELETE, id);
+    }
+
+    public int delete(Connection conn, Long id) throws SQLException {
+        return executeUpdate(conn, SQL_DELETE, id);
     }
 
     public Medicine findById(Long id) throws SQLException {

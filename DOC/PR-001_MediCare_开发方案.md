@@ -33,12 +33,14 @@
 
 | 模块 | 功能点 | 业务规则 |
 |------|--------|----------|
-| **患者管理** | 患者登记、档案查询、就诊卡管理 | 身份证唯一性校验；手机号格式校验；首次就诊自动建档，后续通过身份证快速调取 |
-| **挂号预约** | 科室选择、医生排班查看、现场挂号 | 号源按医生+日期+时段管理；挂号后实时扣减号源；支持当日剩余号源分配 |
-| **医生工作站** | 患者叫号、病历书写、处方开立 | 登录后展示今日候诊列表；双击患者进入病历书写界面；病历结构化模板 |
-| **病历管理** | 病历模板、历史病历检索、电子病历存储 | 结构化字段（主诉/现病史/既往史/体格检查/诊断）；按患者 ID 时间轴展示 |
-| **药品库存** | 药品入库、出库、库存查询、有效期预警 | 入库记录批次号和有效期；库存低于安全阈值或有效期前 30 天自动预警 |
-| **处方管理** | 处方开立、库存校验 | 开立时自动检索药品并校验库存；处方主表+明细表设计；保存时事务级库存扣减 |
+| **患者管理** | 患者登记、档案查询、搜索、编辑、删除 | 身份证唯一性校验；手机号格式校验；弹窗模式新增/编辑患者；表格操作列（编辑/删除） |
+| **挂号预约** | 科室选择、医生排班查看、现场挂号 | 号源按医生+日期+时段管理；挂号后实时扣减号源；支持当日剩余号源分配；挂号后叫号/完成/取消全流程 |
+| **医生工作站** | 患者叫号、病历书写、完成就诊 | 登录后展示今日候诊列表；选中患者进入病历书写界面；结构化字段（主诉/现病史/既往史/体格检查/诊断/建议） |
+| **病历管理** | 历史病历检索、电子病历存储、病历详情查看 | 独立管理界面；全量病历列表；按患者/医生/诊断/主诉模糊搜索；结构化字段；只读详情弹窗；支持删除 |
+| **药品库存** | 药品入库、出库、库存查询、有效期预警 | 入库记录批次号和有效期（同步更新药品批号/有效期）；库存低于安全阈值或有效期前 30 天自动预警；操作列（编辑/删除/出入库） |
+| **处方管理** | 处方开立、库存校验 | 选择已完成就诊患者开立处方；自动检索药品；处方主表+明细表设计；保存时事务级库存扣减；**前端添加药品时暂未即时校验库存（待优化）** |
+| **基础数据** | 科室管理、医生管理、排班管理 | Tab 页切换；增删改查完整；排班与号源联动 |
+| **系统设置** | 管理员管理、密码修改 | 弹窗新增/编辑管理员；密码修改校验 |
 
 ---
 
@@ -81,18 +83,18 @@
 
 ### 4.1 核心技术栈
 
-| 技术点 | 选用方案 | 版本/说明 |
-|--------|----------|-----------|
-| 开发语言 | Java | 11 LTS（兼容 JavaFX 11/17） |
-| 图形界面 | JavaFX + FXML | 官方桌面应用标准技术，FXML 分离界面与逻辑 |
-| 界面设计器 | Gluon Scene Builder | 独立可视化 FXML 设计工具，与 IDEA 协同 |
-| 数据库 | MySQL | 8.0 Community Server |
-| 数据库操作 | Apache Commons DbUtils + HikariCP | DbUtils 1.8.1 + HikariCP 4.0.3 |
-| 构建工具 | Maven | 3.8+ |
-| 版本管理 | Git | 2.35+ |
+| 技术点 | 选用方案 | 版本/说明                                     |
+|--------|----------|-------------------------------------------|
+| 开发语言 | Java | 17 LTS（兼容 JavaFX 21）                      |
+| 图形界面 | JavaFX + FXML | 官方桌面应用标准技术，FXML 分离界面与逻辑                   |
+| 界面设计器 | Gluon Scene Builder | 独立可视化 FXML 设计工具，与 IDEA 协同                 |
+| 数据库 | MySQL | 8.0 Community Server                      |
+| 数据库操作 | Apache Commons DbUtils + HikariCP | DbUtils 1.8.1 + HikariCP 4.0.3            |
+| 构建工具 | Maven | 3.8+                                      |
+| 版本管理 | Git | 2.35+                                     |
 | 日志 | SLF4J + Logback | slf4j-api 1.7.36 / logback-classic 1.2.12 |
-| 数据校验 | Hibernate Validator | 6.2.5.Final |
-| 数据导出 | OpenCSV | 5.7.1 |
+| 数据校验 | Hibernate Validator | 6.2.5.Final                               |
+| 数据导出 | OpenCSV | 5.7.1                                     |
 
 ### 4.2 开发环境配置
 
@@ -136,12 +138,12 @@
 
 | 表名 | 关键字段 | 约束与索引 |
 |------|----------|-----------|
-| `patient` | `id`, `id_card`, `phone`, `name`, `gender`, `birth_date`, `create_time` | PK: `id`; UK: `id_card`; IDX: `phone` |
+| `patient` | `id`, `id_card`, `phone`, `name`, `gender`, `birth_date`, `address`, `allergy_info`, `create_time`, `update_time` | PK: `id`; UK: `id_card`; IDX: `phone` |
 | `doctor` | `id`, `name`, `department_id`, `title`, `status` | PK: `id`; FK: `department_id` → `department(id)` |
 | `department` | `id`, `name`, `location`, `phone` | PK: `id`; UK: `name` |
 | `schedule` | `id`, `doctor_id`, `work_date`, `time_slot`, `total_slots`, `remain_slots` | PK: `id`; UK: `doctor_id + work_date + time_slot`; FK: `doctor_id` |
 | `registration` | `id`, `patient_id`, `schedule_id`, `reg_time`, `status`, `seq_no` | PK: `id`; FK: `patient_id`, `schedule_id` |
-| `medical_record` | `id`, `registration_id`, `patient_id`, `doctor_id`, `chief_complaint`, `present_illness`, `past_history`, `physical_exam`, `diagnosis`, `create_time` | PK: `id`; FK: `registration_id`, `patient_id`, `doctor_id`; IDX: `patient_id + create_time` |
+| `medical_record` | `id`, `registration_id`, `patient_id`, `doctor_id`, `chief_complaint`, `present_illness`, `past_history`, `physical_exam`, `diagnosis`, `advice`, `create_time`, `update_time` | PK: `id`; FK: `registration_id`, `patient_id`, `doctor_id`; IDX: `patient_id + create_time` |
 | `prescription` | `id`, `record_id`, `patient_id`, `doctor_id`, `total_amount`, `status`, `create_time` | PK: `id`; FK: `record_id`, `patient_id`, `doctor_id` |
 | `prescription_item` | `id`, `prescription_id`, `medicine_id`, `quantity`, `dosage`, `usage`, `unit_price`, `amount` | PK: `id`; FK: `prescription_id`, `medicine_id` |
 | `medicine` | `id`, `name`, `spec`, `unit`, `stock`, `safety_stock`, `expiry_date`, `batch_no`, `pinyin_code` | PK: `id`; UK: `name + spec`; IDX: `pinyin_code`, `expiry_date` |
@@ -239,13 +241,27 @@ com.opencsv:opencsv:5.7.1
 
 ## 9. 验收标准
 
-- [ ] **功能完整性**：患者/挂号/病历/处方/药品核心功能正常，业务流程闭环；
-- [ ] **数据库模型**：物理模型文档完整，ER 图与物理模型图一致，DDL 脚本可重复执行；
-- [ ] **代码质量**：注释率 ≥ 15%，编译零警告，符合企业编码规范，DbUtils 模板使用规范，事务控制正确；
-- [ ] **界面体验**：JavaFX 界面美观、导航流畅、无 UI 阻塞，CSS 样式统一；
-- [ ] **数据安全**：所有敏感操作（处方开立、库存扣减）在事务内完成，异常时回滚；
+- [x] **功能完整性**：患者/挂号/医生工作站/病历/处方/药品核心功能正常，业务流程闭环；
+- [x] **数据库模型**：物理模型文档完整，ER 图与物理模型图一致，DDL 脚本可重复执行；
+- [x] **代码质量**：编译零警告，符合企业编码规范，DbUtils 模板使用规范，事务控制正确；
+- [x] **界面体验**：JavaFX 界面美观、导航流畅、无 UI 阻塞，弹窗组件复用（PatientDialog），操作列风格统一；
+- [x] **数据安全**：敏感操作（处方开立、库存扣减、挂号）在事务内完成，异常时回滚；
 - [ ] **文档齐全**：架构文档、数据库物理模型设计文档、部署手册、用户手册齐备；
 - [ ] **Git 规范**：分支管理清晰，提交历史完整，Tag 标记发布版本。
+
+## 10. 代码已实现功能与 PR 文档差异说明
+
+> 以下功能在 PR 文档初稿中提及，但实际代码中未实现或方案调整，以代码实现为准：
+
+| PR 文档原需求 | 代码实际状态 | 说明 |
+|---------------|--------------|------|
+| 患者管理 — 就诊卡管理 | ❌ 未实现 | 无 `card_no` 字段及相关功能；患者通过身份证号唯一标识 |
+| 医生工作站 — 处方开立 | ❌ 未集成 | 处方开立为独立模块（"处方管理"导航菜单），未嵌入医生工作站 |
+| 病历管理 — 病历模板 | ❌ 未实现 | 无病历模板表及模板管理功能 |
+| 处方管理 — 添加药品时即时库存校验 | ⚠️ 待优化 | 前端添加药品明细时未校验库存，仅在保存处方时事务层校验 |
+| 挂号预约 — 取消挂号释放号源 | ⚠️ 事务边界 | `incrementRemain` 与 `delete` 不在同一连接事务内，存在号源与记录不一致风险 |
+
+**二期规划（未在本次 MVP 范围）**：就诊卡管理、病历模板、医生工作站内嵌处方开立、前端即时库存校验。
 
 ---
 

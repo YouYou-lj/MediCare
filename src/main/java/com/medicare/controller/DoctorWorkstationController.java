@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -51,7 +53,8 @@ public class DoctorWorkstationController implements Initializable {
     @FXML private TextField txtChiefComplaint, txtDiagnosis;
     @FXML private TextArea txtPresentIllness, txtPastHistory, txtPhysicalExam, txtAdvice;
     @FXML private TableView<MedicalRecord> tableHistory;
-    @FXML private TableColumn<MedicalRecord, String> colHistDate, colHistDoctor, colHistDiagnosis;
+    @FXML private TableColumn<MedicalRecord, LocalDateTime> colHistDate;
+    @FXML private TableColumn<MedicalRecord, String> colHistDoctor, colHistDiagnosis;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -94,6 +97,13 @@ public class DoctorWorkstationController implements Initializable {
 
     private void initHistoryTable() {
         colHistDate.setCellValueFactory(new PropertyValueFactory<>("createTime"));
+        colHistDate.setCellFactory(col -> new TableCell<>() {
+            private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            @Override protected void updateItem(LocalDateTime dt, boolean empty) {
+                super.updateItem(dt, empty);
+                setText(empty || dt == null ? null : dt.format(fmt));
+            }
+        });
         colHistDoctor.setCellValueFactory(new PropertyValueFactory<>("doctorName"));
         colHistDiagnosis.setCellValueFactory(new PropertyValueFactory<>("diagnosis"));
         tableHistory.setItems(historyList);

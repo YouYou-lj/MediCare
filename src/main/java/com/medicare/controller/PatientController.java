@@ -7,24 +7,25 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URL;
-import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.ResourceBundle;
 
 /**
- * 患者管理控制器
- * 界面渲染、事件响应、表单校验
- * 耗时操作在后台线程执行，禁止在 UI 线程执行 SQL
- *
- * @author MediCare Team
- * @date 2026-06-10
+ * 患者管理控制器（表格为主 + 弹窗编辑）
+ * 复用 PatientDialog 进行新增/编辑
  */
 public class PatientController implements Initializable {
 
@@ -33,354 +34,235 @@ public class PatientController implements Initializable {
     private final PatientService patientService = new PatientService();
     private final ObservableList<Patient> patientList = FXCollections.observableArrayList();
 
-    // 当前编辑的患者（null 表示新建）
-    private Patient editingPatient = null;
+    // ========== 顶部工具栏 ==========
+    @FXML private TextField txtSearch;
+    @FXML private Label lblRecordCount;
 
-    // ========== FXML 注入 ==========
-
-    @FXML
-    private TextField txtSearch;
-    @FXML
-    private TableView<Patient> tablePatients;
-    @FXML
-    private TableColumn<Patient, Long> colId;
-    @FXML
-    private TableColumn<Patient, String> colIdCard;
-    @FXML
-    private TableColumn<Patient, String> colName;
-    @FXML
-    private TableColumn<Patient, Integer> colGender;
-    @FXML
-    private TableColumn<Patient, LocalDate> colBirthDate;
-    @FXML
-    private TableColumn<Patient, String> colPhone;
-    @FXML
-    private TableColumn<Patient, String> colAddress;
-    @FXML
-    private TableColumn<Patient, String> colCreateTime;
-    @FXML
-    private Label lblRecordCount;
-    @FXML
-    private TextField txtIdCard;
-    @FXML
-    private TextField txtName;
-    @FXML
-    private ComboBox<String> cmbGender;
-    @FXML
-    private DatePicker dpBirthDate;
-    @FXML
-    private TextField txtPhone;
-    @FXML
-    private TextField txtAddress;
-    @FXML
-    private TextField txtAllergy;
-    @FXML
-    private Label lblMessage;
+    // ========== 患者列表表格 ==========
+    @FXML private TableView<Patient> tablePatients;
+    @FXML private TableColumn<Patient, Long> colId;
+    @FXML private TableColumn<Patient, String> colIdCard, colName, colPhone, colAddress;
+    @FXML private TableColumn<Patient, Integer> colGender;
+    @FXML private TableColumn<Patient, LocalDate> colBirthDate;
+    @FXML private TableColumn<Patient, LocalDateTime> colCreateTime;
+    @FXML private TableColumn<Patient, Void> colAction;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         logger.info("患者管理界面初始化");
-
-        // 初始化性别下拉框
-        cmbGender.setItems(FXCollections.observableArrayList("女", "男", "其他"));
-        cmbGender.getSelectionModel().select(0);
-
-        // 初始化表格列
-        initTableColumns();
-
-        // 表格选中事件
-        tablePatients.getSelectionModel().selectedItemProperty().addListener(
-                (obs, oldVal, newVal) -> {
-                    if (newVal != null) {
-                        loadPatientToForm(newVal);
-                    }
-                }
-        );
-
-        // 加载数据
+        initTable();
         loadData();
     }
 
     // ============================================================
-    // 表格初始化
+    // 表格初始化（含操作按钮列）
     // ============================================================
 
-    private void initTableColumns() {
+    private void initTable() {
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colIdCard.setCellValueFactory(new PropertyValueFactory<>("idCard"));
         colName.setCellValueFactory(new PropertyValueFactory<>("name"));
+
         colGender.setCellValueFactory(new PropertyValueFactory<>("gender"));
         colGender.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(Integer gender, boolean empty) {
+            @Override protected void updateItem(Integer gender, boolean empty) {
                 super.updateItem(gender, empty);
-                if (empty || gender == null) {
-                    setText(null);
-                } else {
-                    setText(gender == 0 ? "女" : gender == 1 ? "男" : "其他");
-                }
+                setText(empty || gender == null ? null : (gender == 0 ? "女性" : gender == 1 ? "男性" : "其他"));
             }
         });
+
         colBirthDate.setCellValueFactory(new PropertyValueFactory<>("birthDate"));
         colPhone.setCellValueFactory(new PropertyValueFactory<>("phone"));
         colAddress.setCellValueFactory(new PropertyValueFactory<>("address"));
+
         colCreateTime.setCellValueFactory(new PropertyValueFactory<>("createTime"));
+        colCreateTime.setCellFactory(col -> new TableCell<>() {
+            private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            @Override protected void updateItem(LocalDateTime dt, boolean empty) {
+                super.updateItem(dt, empty);
+                setText(empty || dt == null ? null : dt.format(fmt));
+            }
+        });
+
+        // 操作列：编辑 + 删除
+        colAction.setCellFactory(col -> new TableCell<>() {
+            private final Button btnEdit = new Button("编辑");
+            private final Button btnDel = new Button("删除");
+            private final HBox box = new HBox(5, btnEdit, btnDel);
+
+            {
+                btnEdit.setStyle("-fx-font-size: 11px; -fx-padding: 3 8; -fx-text-fill: #2980b9;");
+                btnDel.setStyle("-fx-font-size: 11px; -fx-padding: 3 8; -fx-text-fill: #c0392b;");
+                btnEdit.setOnAction(e -> onEditPatient(getTableView().getItems().get(getIndex())));
+                btnDel.setOnAction(e -> onDeletePatient(getTableView().getItems().get(getIndex())));
+            }
+
+            @Override protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : box);
+            }
+        });
 
         tablePatients.setItems(patientList);
     }
 
     // ============================================================
-    // 数据加载（后台线程）
+    // 数据加载
     // ============================================================
 
     private void loadData() {
-        Task<java.util.List<Patient>> task = new Task<>() {
-            @Override
-            protected java.util.List<Patient> call() throws Exception {
-                return patientService.listAll();
-            }
+        Task<List<Patient>> task = new Task<>() {
+            @Override protected List<Patient> call() throws Exception { return patientService.listAll(); }
         };
-
-        task.setOnSucceeded(e -> {
-            patientList.clear();
-            patientList.addAll(task.getValue());
+        task.setOnSucceeded(e -> Platform.runLater(() -> {
+            patientList.setAll(task.getValue());
             lblRecordCount.setText("共 " + patientList.size() + " 条记录");
-            showInfo("数据加载完成");
-        });
-
-        task.setOnFailed(e -> {
-            logger.error("加载患者数据失败", task.getException());
-            showError("加载数据失败: " + task.getException().getMessage());
-        });
-
+        }));
+        task.setOnFailed(e -> logger.error("加载患者数据失败", task.getException()));
         new Thread(task).start();
     }
 
     // ============================================================
-    // 查询
+    // 搜索 / 刷新
     // ============================================================
 
-    @FXML
-    private void handleSearch() {
-        String keyword = txtSearch.getText();
-
-        Task<java.util.List<Patient>> task = new Task<>() {
-            @Override
-            protected java.util.List<Patient> call() throws Exception {
-                return patientService.search(keyword);
-            }
+    @FXML private void handleSearch() {
+        String kw = txtSearch.getText();
+        Task<List<Patient>> task = new Task<>() {
+            @Override protected List<Patient> call() throws Exception { return patientService.search(kw); }
         };
-
-        task.setOnSucceeded(e -> {
-            patientList.clear();
-            patientList.addAll(task.getValue());
+        task.setOnSucceeded(e -> Platform.runLater(() -> {
+            patientList.setAll(task.getValue());
             lblRecordCount.setText("共 " + patientList.size() + " 条记录");
-            showInfo("查询完成，找到 " + patientList.size() + " 条记录");
-        });
-
-        task.setOnFailed(e -> {
-            logger.error("查询患者失败", task.getException());
-            showError("查询失败: " + task.getException().getMessage());
-        });
-
+        }));
+        task.setOnFailed(e -> logger.error("查询患者失败", task.getException()));
         new Thread(task).start();
     }
 
-    // ============================================================
-    // 新建
-    // ============================================================
-
-    @FXML
-    private void handleNew() {
-        editingPatient = null;
-        clearForm();
-        showInfo("请填写新患者信息");
-    }
-
-    // ============================================================
-    // 保存（新增或更新）
-    // ============================================================
-
-    @FXML
-    private void handleSave() {
-        Patient patient = buildPatientFromForm();
-        if (patient == null) {
-            return;
-        }
-
-        Task<Void> task;
-        if (editingPatient == null) {
-            // 新增
-            task = new Task<>() {
-                @Override
-                protected Void call() throws Exception {
-                    Long id = patientService.registerPatient(patient);
-                    patient.setId(id);
-                    return null;
-                }
-            };
-        } else {
-            // 更新
-            patient.setId(editingPatient.getId());
-            task = new Task<>() {
-                @Override
-                protected Void call() throws Exception {
-                    patientService.updatePatient(patient);
-                    return null;
-                }
-            };
-        }
-
-        task.setOnSucceeded(e -> {
-            Platform.runLater(() -> {
-                if (editingPatient == null) {
-                    patientList.add(0, patient);
-                    showInfo("患者建档成功");
-                    logger.info("新建患者: id={}, name={}", patient.getId(), patient.getName());
-                } else {
-                    int idx = patientList.indexOf(editingPatient);
-                    if (idx >= 0) {
-                        patientList.set(idx, patient);
-                    }
-                    editingPatient = patient;
-                    showInfo("档案更新成功");
-                    logger.info("更新患者: id={}, name={}", patient.getId(), patient.getName());
-                }
-                lblRecordCount.setText("共 " + patientList.size() + " 条记录");
-            });
-        });
-
-        task.setOnFailed(e -> {
-            Throwable ex = task.getException();
-            logger.error("保存患者失败", ex);
-            Platform.runLater(() -> showError("保存失败: " + ex.getMessage()));
-        });
-
-        new Thread(task).start();
-    }
-
-    // ============================================================
-    // 删除
-    // ============================================================
-
-    @FXML
-    private void handleDelete() {
-        if (editingPatient == null || editingPatient.getId() == null) {
-            showError("请先选择要删除的患者");
-            return;
-        }
-
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("确认删除");
-        alert.setHeaderText(null);
-        alert.setContentText("确定删除患者 " + editingPatient.getName() + " 的档案吗？此操作不可恢复！");
-
-        alert.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK) {
-                doDelete(editingPatient.getId());
-            }
-        });
-    }
-
-    private void doDelete(Long id) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                patientService.deletePatient(id);
-                return null;
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            Platform.runLater(() -> {
-                patientList.remove(editingPatient);
-                clearForm();
-                lblRecordCount.setText("共 " + patientList.size() + " 条记录");
-                showInfo("删除成功");
-                logger.info("删除患者: id={}", id);
-            });
-        });
-
-        task.setOnFailed(e -> {
-            logger.error("删除患者失败", task.getException());
-            Platform.runLater(() -> showError("删除失败: " + task.getException().getMessage()));
-        });
-
-        new Thread(task).start();
-    }
-
-    // ============================================================
-    // 刷新 / 清除
-    // ============================================================
-
-    @FXML
-    private void handleRefresh() {
+    @FXML private void handleRefresh() {
         txtSearch.clear();
         loadData();
     }
 
-    @FXML
-    private void handleClear() {
-        clearForm();
-    }
-
     // ============================================================
-    // 表单辅助方法
+    // 新增 / 编辑患者（弹窗）
     // ============================================================
 
-    private void loadPatientToForm(Patient patient) {
-        editingPatient = patient;
-        txtIdCard.setText(patient.getIdCard());
-        txtName.setText(patient.getName());
-        cmbGender.getSelectionModel().select(patient.getGender() != null ? patient.getGender() : 0);
-        dpBirthDate.setValue(patient.getBirthDate());
-        txtPhone.setText(patient.getPhone());
-        txtAddress.setText(patient.getAddress());
-        txtAllergy.setText(patient.getAllergyInfo());
-        lblMessage.setText("");
+    @FXML private void handleNew() {
+        openPatientDialog(null, "新增患者");
     }
 
-    private Patient buildPatientFromForm() {
-        String idCard = txtIdCard.getText().trim();
-        String name = txtName.getText().trim();
+    private void onEditPatient(Patient patient) {
+        openPatientDialog(patient, "编辑患者");
+    }
 
-        if (idCard.isEmpty() || name.isEmpty()) {
-            showError("身份证号和姓名不能为空");
-            return null;
+    private void openPatientDialog(Patient patient, String title) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/PatientDialog.fxml"));
+            DialogPane pane = loader.load();
+            PatientDialogController controller = loader.getController();
+            controller.setPatient(patient);
+
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setDialogPane(pane);
+            dialog.setTitle(title);
+
+            final Button okButton = (Button) pane.lookupButton(ButtonType.OK);
+            okButton.setText("保存");
+            okButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+                Patient p = controller.getPatient();
+                if (p == null) {
+                    event.consume();
+                    return;
+                }
+                event.consume();
+                okButton.setDisable(true);
+                savePatient(p, dialog, okButton);
+            });
+
+            dialog.showAndWait();
+        } catch (IOException e) {
+            logger.error("打开患者弹窗失败", e);
+            showAlert(Alert.AlertType.ERROR, "打开弹窗失败: " + e.getMessage());
         }
-
-        Patient patient = new Patient();
-        patient.setIdCard(idCard);
-        patient.setName(name);
-        patient.setGender(cmbGender.getSelectionModel().getSelectedIndex());
-        patient.setBirthDate(dpBirthDate.getValue());
-        patient.setPhone(txtPhone.getText().trim());
-        patient.setAddress(txtAddress.getText().trim());
-        patient.setAllergyInfo(txtAllergy.getText().trim());
-
-        return patient;
     }
 
-    private void clearForm() {
-        editingPatient = null;
-        txtIdCard.clear();
-        txtName.clear();
-        cmbGender.getSelectionModel().select(0);
-        dpBirthDate.setValue(null);
-        txtPhone.clear();
-        txtAddress.clear();
-        txtAllergy.clear();
-        lblMessage.setText("");
-        tablePatients.getSelectionModel().clearSelection();
+    private void savePatient(Patient patient, Dialog<ButtonType> dialog, Button okButton) {
+        if (patient.getId() != null) {
+            // 更新
+            Task<Void> task = new Task<>() {
+                @Override protected Void call() throws Exception {
+                    patientService.updatePatient(patient);
+                    return null;
+                }
+            };
+            task.setOnSucceeded(e -> Platform.runLater(() -> {
+                loadData();
+                dialog.close();
+                Platform.runLater(() -> showAlert(Alert.AlertType.INFORMATION, "患者更新成功"));
+            }));
+            task.setOnFailed(e -> Platform.runLater(() -> {
+                okButton.setDisable(false);
+                showAlert(Alert.AlertType.ERROR, task.getException().getMessage());
+            }));
+            new Thread(task).start();
+        } else {
+            // 新增
+            Task<Long> task = new Task<>() {
+                @Override protected Long call() throws Exception {
+                    return patientService.registerPatient(patient);
+                }
+            };
+            task.setOnSucceeded(e -> Platform.runLater(() -> {
+                loadData();
+                dialog.close();
+                Platform.runLater(() -> showAlert(Alert.AlertType.INFORMATION, "患者建档成功"));
+            }));
+            task.setOnFailed(e -> Platform.runLater(() -> {
+                okButton.setDisable(false);
+                showAlert(Alert.AlertType.ERROR, task.getException().getMessage());
+            }));
+            new Thread(task).start();
+        }
     }
 
-    private void showInfo(String msg) {
-        lblMessage.setStyle("-fx-text-fill: #27ae60;");
-        lblMessage.setText(msg);
+    // ============================================================
+    // 删除患者
+    // ============================================================
+
+    private void onDeletePatient(Patient patient) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("删除患者");
+        alert.setHeaderText(null);
+        alert.setContentText("确定删除患者 " + patient.getName() + " 的档案吗？此操作不可恢复！");
+        alert.showAndWait().ifPresent(r -> {
+            if (r == ButtonType.OK) {
+                Task<Void> task = new Task<>() {
+                    @Override protected Void call() throws Exception {
+                        patientService.deletePatient(patient.getId());
+                        return null;
+                    }
+                };
+                task.setOnSucceeded(e -> Platform.runLater(() -> {
+                    loadData();
+                    showAlert(Alert.AlertType.INFORMATION, "删除成功");
+                }));
+                task.setOnFailed(e -> Platform.runLater(() ->
+                    showAlert(Alert.AlertType.ERROR, task.getException().getMessage())));
+                new Thread(task).start();
+            }
+        });
     }
 
-    private void showError(String msg) {
-        lblMessage.setStyle("-fx-text-fill: #c0392b;");
-        lblMessage.setText(msg);
+    // ============================================================
+    // 通用辅助
+    // ============================================================
+
+    private void showAlert(Alert.AlertType type, String msg) {
+        Alert alert = new Alert(type);
+        alert.setTitle(type == Alert.AlertType.ERROR ? "错误" : "提示");
+        alert.setHeaderText(null);
+        alert.setContentText(msg);
+        alert.showAndWait();
     }
 }

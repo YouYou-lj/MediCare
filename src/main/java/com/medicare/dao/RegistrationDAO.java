@@ -139,7 +139,7 @@ public class RegistrationDAO extends BaseDAO<Registration> {
     }
 
     public Integer getMaxSeqNo(LocalDate date) throws SQLException {
-        Integer max = queryScalar(SQL_MAX_SEQ_NO, date);
-        return max != null ? max : 0;
+        Number max = queryScalar(SQL_MAX_SEQ_NO, date);
+        return max != null ? max.intValue() : 0;
     }
 }

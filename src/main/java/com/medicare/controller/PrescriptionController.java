@@ -14,7 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -53,7 +56,7 @@ public class PrescriptionController implements Initializable {
     @FXML private TableView<PrescriptionItem> tableItems;
     @FXML private TableColumn<PrescriptionItem, String> colItemName, colItemSpec, colItemUnit, colItemUsage;
     @FXML private TableColumn<PrescriptionItem, Integer> colItemQty;
-    @FXML private TableColumn<PrescriptionItem, String> colItemPrice, colItemAmount;
+    @FXML private TableColumn<PrescriptionItem, BigDecimal> colItemPrice, colItemAmount;
     @FXML private TextField txtMedSearch, txtUsage;
     @FXML private ComboBox<Medicine> cmbMedicine;
     @FXML private Spinner<Integer> spinQty;
@@ -61,7 +64,9 @@ public class PrescriptionController implements Initializable {
     // ========== 今日处方列表 ==========
     @FXML private TableView<Prescription> tablePrescriptions;
     @FXML private TableColumn<Prescription, Long> colPrescId;
-    @FXML private TableColumn<Prescription, String> colPrescPatient, colPrescDoctor, colPrescAmount, colPrescTime;
+    @FXML private TableColumn<Prescription, String> colPrescPatient, colPrescDoctor;
+    @FXML private TableColumn<Prescription, BigDecimal> colPrescAmount;
+    @FXML private TableColumn<Prescription, LocalDateTime> colPrescTime;
     @FXML private TableColumn<Prescription, Integer> colPrescStatus;
 
     @Override
@@ -97,7 +102,19 @@ public class PrescriptionController implements Initializable {
         colItemQty.setCellValueFactory(new PropertyValueFactory<>("quantity"));
         colItemUnit.setCellValueFactory(new PropertyValueFactory<>("medicineUnit"));
         colItemPrice.setCellValueFactory(new PropertyValueFactory<>("unitPrice"));
+        colItemPrice.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(BigDecimal price, boolean empty) {
+                super.updateItem(price, empty);
+                setText(empty || price == null ? null : price.setScale(2, RoundingMode.HALF_UP).toString());
+            }
+        });
         colItemAmount.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        colItemAmount.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(BigDecimal amount, boolean empty) {
+                super.updateItem(amount, empty);
+                setText(empty || amount == null ? null : amount.setScale(2, RoundingMode.HALF_UP).toString());
+            }
+        });
         colItemUsage.setCellValueFactory(new PropertyValueFactory<>("usageDesc"));
         tableItems.setItems(itemList);
     }
@@ -107,6 +124,12 @@ public class PrescriptionController implements Initializable {
         colPrescPatient.setCellValueFactory(new PropertyValueFactory<>("patientName"));
         colPrescDoctor.setCellValueFactory(new PropertyValueFactory<>("doctorName"));
         colPrescAmount.setCellValueFactory(new PropertyValueFactory<>("totalAmount"));
+        colPrescAmount.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(BigDecimal amount, boolean empty) {
+                super.updateItem(amount, empty);
+                setText(empty || amount == null ? null : "￥" + amount.setScale(2, RoundingMode.HALF_UP).toString());
+            }
+        });
         colPrescStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
         colPrescStatus.setCellFactory(col -> new TableCell<>() {
             @Override protected void updateItem(Integer status, boolean empty) {
@@ -124,6 +147,13 @@ public class PrescriptionController implements Initializable {
             }
         });
         colPrescTime.setCellValueFactory(new PropertyValueFactory<>("createTime"));
+        colPrescTime.setCellFactory(col -> new TableCell<>() {
+            private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            @Override protected void updateItem(LocalDateTime dt, boolean empty) {
+                super.updateItem(dt, empty);
+                setText(empty || dt == null ? null : dt.format(fmt));
+            }
+        });
         tablePrescriptions.setItems(prescriptionList);
     }
 

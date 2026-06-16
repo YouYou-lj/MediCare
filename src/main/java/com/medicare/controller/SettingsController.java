@@ -7,19 +7,24 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ResourceBundle;
 
 /**
  * 系统设置控制器
- * 管理员 CRUD + 密码修改
+ * 管理员管理（弹窗新增/编辑）+ 密码修改
  *
  * @author MediCare Team
  * @date 2026-06-10
@@ -31,18 +36,15 @@ public class SettingsController implements Initializable {
     private final SysUserService sysUserService = new SysUserService();
     private final ObservableList<SysUser> adminList = FXCollections.observableArrayList();
 
-    private SysUser editingAdmin = null;
-
     // ========== 管理员管理 Tab ==========
     @FXML private TextField txtAdminSearch;
     @FXML private TableView<SysUser> tableAdmins;
     @FXML private TableColumn<SysUser, Long> colAdminId;
-    @FXML private TableColumn<SysUser, String> colAdminUsername, colAdminRealName, colAdminCreateTime;
+    @FXML private TableColumn<SysUser, String> colAdminUsername, colAdminRealName;
+    @FXML private TableColumn<SysUser, LocalDateTime> colAdminCreateTime;
     @FXML private TableColumn<SysUser, Integer> colAdminStatus;
+    @FXML private TableColumn<SysUser, Void> colAdminAction;
     @FXML private Label lblAdminCount, lblAdminMessage;
-    @FXML private TextField txtAdminUsername, txtAdminRealName;
-    @FXML private PasswordField txtAdminPassword;
-    @FXML private ComboBox<String> cmbAdminStatus;
 
     // ========== 修改密码 Tab ==========
     @FXML private PasswordField txtOldPassword, txtNewPassword, txtConfirmPassword;
@@ -52,13 +54,11 @@ public class SettingsController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         logger.info("系统设置界面初始化");
         initAdminTable();
-        cmbAdminStatus.setItems(FXCollections.observableArrayList("停用", "启用"));
-        cmbAdminStatus.getSelectionModel().select(1);
         loadAdminData();
     }
 
     // ============================================================
-    // 管理员表格初始化
+    // 管理员表格初始化（含操作按钮列）
     // ============================================================
 
     private void initAdminTable() {
@@ -73,10 +73,34 @@ public class SettingsController implements Initializable {
             }
         });
         colAdminCreateTime.setCellValueFactory(new PropertyValueFactory<>("createTime"));
-        tableAdmins.setItems(adminList);
-        tableAdmins.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> {
-            if (n != null) loadAdminToForm(n);
+        colAdminCreateTime.setCellFactory(col -> new TableCell<>() {
+            private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            @Override protected void updateItem(LocalDateTime dt, boolean empty) {
+                super.updateItem(dt, empty);
+                setText(empty || dt == null ? null : dt.format(fmt));
+            }
         });
+
+        // 操作列：编辑 + 删除按钮
+        colAdminAction.setCellFactory(col -> new TableCell<>() {
+            private final Button btnEdit = new Button("编辑");
+            private final Button btnDel = new Button("删除");
+            private final HBox box = new HBox(5, btnEdit, btnDel);
+
+            {
+                btnEdit.setStyle("-fx-font-size: 11px; -fx-padding: 3 10;");
+                btnDel.setStyle("-fx-font-size: 11px; -fx-padding: 3 10; -fx-text-fill: #c0392b;");
+                btnEdit.setOnAction(e -> onEdit(getTableView().getItems().get(getIndex())));
+                btnDel.setOnAction(e -> onDelete(getTableView().getItems().get(getIndex())));
+            }
+
+            @Override protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : box);
+            }
+        });
+
+        tableAdmins.setItems(adminList);
     }
 
     // ============================================================
@@ -96,7 +120,7 @@ public class SettingsController implements Initializable {
     }
 
     // ============================================================
-    // 管理员管理事件
+    // 搜索
     // ============================================================
 
     @FXML private void handleAdminSearch() {
@@ -111,71 +135,99 @@ public class SettingsController implements Initializable {
         new Thread(task).start();
     }
 
-    @FXML private void handleAdminNew() {
-        editingAdmin = null;
-        clearAdminForm();
+    // ============================================================
+    // 新增管理员（弹窗）
+    // ============================================================
+
+    @FXML private void handleAdminAdd() {
+        openAdminDialog(null, "新增管理员");
     }
 
-    @FXML private void handleAdminSave() {
-        SysUser user = new SysUser();
-        user.setUsername(txtAdminUsername.getText().trim());
-        user.setPassword(txtAdminPassword.getText());
-        user.setRealName(txtAdminRealName.getText().trim());
-        user.setStatus(cmbAdminStatus.getSelectionModel().getSelectedIndex());
+    private void onEdit(SysUser user) {
+        openAdminDialog(user, "编辑管理员");
+    }
 
-        if (user.getUsername().isEmpty() || user.getPassword().isEmpty()) {
-            showAdminError("用户名和密码不能为空"); return;
+    private void openAdminDialog(SysUser user, String title) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/AdminDialog.fxml"));
+            DialogPane pane = loader.load();
+            AdminDialogController controller = loader.getController();
+            controller.setUser(user);
+
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setDialogPane(pane);
+            dialog.setTitle(title);
+
+            // 自定义 OK 按钮行为
+            final Button okButton = (Button) pane.lookupButton(ButtonType.OK);
+            okButton.setText("保存");
+            okButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+                SysUser newUser = controller.getUser();
+                if (newUser == null) {
+                    event.consume(); // 阻止关闭
+                    return;
+                }
+                event.consume(); // 先阻止关闭，等后台任务完成
+                okButton.setDisable(true);
+                saveAdmin(newUser, dialog, okButton);
+            });
+
+            dialog.showAndWait();
+        } catch (IOException e) {
+            logger.error("打开弹窗失败", e);
+            showAdminError("打开弹窗失败");
         }
+    }
 
-        if (editingAdmin != null) {
-            user.setId(editingAdmin.getId());
+    private void saveAdmin(SysUser user, Dialog<ButtonType> dialog, Button okButton) {
+        if (user.getId() != null) {
+            // 编辑
             Task<Void> task = new Task<>() {
                 @Override protected Void call() throws Exception { sysUserService.updateAdmin(user); return null; }
             };
             task.setOnSucceeded(e -> Platform.runLater(() -> {
-                loadAdminData(); showAdminInfo("更新成功");
+                loadAdminData(); dialog.close(); showAdminInfo("更新成功");
             }));
-            task.setOnFailed(e -> Platform.runLater(() -> showAdminError(task.getException().getMessage())));
+            task.setOnFailed(e -> Platform.runLater(() -> {
+                okButton.setDisable(false); showAdminError(task.getException().getMessage());
+            }));
             new Thread(task).start();
         } else {
+            // 新增
             Task<Long> task = new Task<>() {
                 @Override protected Long call() throws Exception { return sysUserService.addAdmin(user); }
             };
             task.setOnSucceeded(e -> Platform.runLater(() -> {
-                loadAdminData(); clearAdminForm(); showAdminInfo("新增成功");
+                loadAdminData(); dialog.close(); showAdminInfo("新增成功");
             }));
-            task.setOnFailed(e -> Platform.runLater(() -> showAdminError(task.getException().getMessage())));
+            task.setOnFailed(e -> Platform.runLater(() -> {
+                okButton.setDisable(false); showAdminError(task.getException().getMessage());
+            }));
             new Thread(task).start();
         }
     }
 
-    @FXML private void handleAdminClear() {
-        clearAdminForm();
-    }
+    // ============================================================
+    // 删除管理员
+    // ============================================================
 
-    @FXML private void handleAdminDelete() {
-        if (editingAdmin == null) { showAdminError("请先选择要删除的管理员"); return; }
-
-        // 保护当前登录用户
+    private void onDelete(SysUser user) {
         SysUser current = LoginController.getCurrentUser();
-        if (current != null && current.getId().equals(editingAdmin.getId())) {
+        if (current != null && current.getId().equals(user.getId())) {
             showAdminError("不能删除当前登录的账号"); return;
         }
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("删除管理员");
         alert.setHeaderText(null);
-        alert.setContentText("确定删除管理员 " + editingAdmin.getUsername() + " 吗？");
+        alert.setContentText("确定删除管理员 " + user.getUsername() + " 吗？");
         alert.showAndWait().ifPresent(r -> {
             if (r == ButtonType.OK) {
                 Task<Void> task = new Task<>() {
-                    @Override protected Void call() throws Exception {
-                        sysUserService.deleteAdmin(editingAdmin.getId());
-                        return null;
-                    }
+                    @Override protected Void call() throws Exception { sysUserService.deleteAdmin(user.getId()); return null; }
                 };
                 task.setOnSucceeded(e -> Platform.runLater(() -> {
-                    loadAdminData(); clearAdminForm(); showAdminInfo("删除成功");
+                    loadAdminData(); showAdminInfo("删除成功");
                 }));
                 task.setOnFailed(e -> Platform.runLater(() -> showAdminError(task.getException().getMessage())));
                 new Thread(task).start();
@@ -183,36 +235,8 @@ public class SettingsController implements Initializable {
         });
     }
 
-    private void loadAdminToForm(SysUser user) {
-        editingAdmin = user;
-        txtAdminUsername.setText(user.getUsername());
-        txtAdminPassword.setText(user.getPassword());
-        txtAdminRealName.setText(user.getRealName());
-        cmbAdminStatus.getSelectionModel().select(user.getStatus() != null && user.getStatus() == 1 ? 1 : 0);
-    }
-
-    private void clearAdminForm() {
-        editingAdmin = null;
-        txtAdminUsername.clear();
-        txtAdminPassword.clear();
-        txtAdminRealName.clear();
-        cmbAdminStatus.getSelectionModel().select(1);
-        lblAdminMessage.setText("");
-        tableAdmins.getSelectionModel().clearSelection();
-    }
-
-    private void showAdminInfo(String msg) {
-        lblAdminMessage.setStyle("-fx-text-fill: #27ae60;");
-        lblAdminMessage.setText(msg);
-    }
-
-    private void showAdminError(String msg) {
-        lblAdminMessage.setStyle("-fx-text-fill: #c0392b;");
-        lblAdminMessage.setText(msg);
-    }
-
     // ============================================================
-    // 密码修改事件
+    // 密码修改
     // ============================================================
 
     @FXML private void handleChangePassword() {
@@ -230,14 +254,21 @@ public class SettingsController implements Initializable {
             }
         };
         task.setOnSucceeded(e -> Platform.runLater(() -> {
-            txtOldPassword.clear();
-            txtNewPassword.clear();
-            txtConfirmPassword.clear();
-            showPwdInfo("密码修改成功，请使用新密码重新登录");
-            logger.info("用户 {} 修改密码成功", current.getUsername());
+            txtOldPassword.clear(); txtNewPassword.clear(); txtConfirmPassword.clear();
+            showPwdInfo("密码修改成功");
         }));
         task.setOnFailed(e -> Platform.runLater(() -> showPwdError(task.getException().getMessage())));
         new Thread(task).start();
+    }
+
+    private void showAdminInfo(String msg) {
+        lblAdminMessage.setStyle("-fx-text-fill: #27ae60;");
+        lblAdminMessage.setText(msg);
+    }
+
+    private void showAdminError(String msg) {
+        lblAdminMessage.setStyle("-fx-text-fill: #c0392b;");
+        lblAdminMessage.setText(msg);
     }
 
     private void showPwdInfo(String msg) {

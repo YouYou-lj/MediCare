@@ -1,0 +1,91 @@
+/* ============================================================
+   MediCare 登录界面样式
+   ============================================================ */
+
+.login-root {
+    -fx-background-color: linear-gradient(to bottom right, #1a3d6e, #2c5aa0);
+    -fx-font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+.login-title {
+    -fx-text-fill: white;
+    -fx-font-size: 42px;
+    -fx-font-weight: bold;
+    -fx-font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+.login-subtitle {
+    -fx-text-fill: #e0e0e0;
+    -fx-font-size: 20px;
+    -fx-font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+.login-version {
+    -fx-text-fill: #bdc3c7;
+    -fx-font-size: 14px;
+}
+
+.login-card {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 20, 0, 0, 8);
+}
+
+.login-card-title {
+    -fx-text-fill: #2c3e50;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 10 0;
+}
+
+.login-label {
+    -fx-text-fill: #7f8c8d;
+    -fx-font-size: 13px;
+}
+
+.login-input {
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: #dcdde1;
+    -fx-border-width: 1;
+    -fx-padding: 10 12;
+    -fx-font-size: 14px;
+}
+
+.login-input:focused {
+    -fx-border-color: #2c5aa0;
+}
+
+.login-message {
+    -fx-font-size: 13px;
+    -fx-min-height: 20;
+}
+
+.login-btn {
+    -fx-background-color: #2c5aa0;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 12 0;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.login-btn:hover {
+    -fx-background-color: #1a3d6e;
+}
+
+.login-btn:pressed {
+    -fx-background-color: #0f2444;
+}
+
+.login-hint {
+    -fx-text-fill: #95a5a6;
+    -fx-font-size: 12px;
+    -fx-alignment: center;
+}
+
+.login-footer {
+    -fx-text-fill: rgba(255,255,255,0.6);
+    -fx-font-size: 12px;
+}

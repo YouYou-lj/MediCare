@@ -17,90 +17,38 @@
             <HBox spacing="10" alignment="CENTER_LEFT">
                 <Label text="患者管理" styleClass="section-title"/>
                 <Region HBox.hgrow="ALWAYS"/>
+                <Button text="新建档案" onAction="#handleNew" styleClass="btn-success"/>
                 <TextField fx:id="txtSearch" promptText="姓名/手机号/身份证号" prefWidth="200"/>
                 <Button text="查询" onAction="#handleSearch" styleClass="btn-primary"/>
-                <Button text="新建档案" onAction="#handleNew" styleClass="btn-success"/>
                 <Button text="刷新" onAction="#handleRefresh"/>
             </HBox>
             <Separator/>
         </VBox>
     </top>
 
-    <!-- 中间内容：表格 + 编辑表单 -->
+    <!-- 中间内容：全宽表格 -->
     <center>
-        <SplitPane dividerPositions="0.55" orientation="VERTICAL">
-            <!-- 上：患者列表 -->
-            <VBox spacing="5">
-                <padding>
-                    <Insets top="5" right="15" bottom="5" left="15"/>
-                </padding>
-                <TableView fx:id="tablePatients" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="colId" text="ID" prefWidth="60"/>
-                        <TableColumn fx:id="colIdCard" text="身份证号" prefWidth="160"/>
-                        <TableColumn fx:id="colName" text="姓名" prefWidth="80"/>
-                        <TableColumn fx:id="colGender" text="性别" prefWidth="60"/>
-                        <TableColumn fx:id="colBirthDate" text="出生日期" prefWidth="100"/>
-                        <TableColumn fx:id="colPhone" text="手机号" prefWidth="120"/>
-                        <TableColumn fx:id="colAddress" text="住址" prefWidth="200"/>
-                        <TableColumn fx:id="colCreateTime" text="建档时间" prefWidth="140"/>
-                    </columns>
-                </TableView>
-                <HBox alignment="CENTER_RIGHT" spacing="10">
-                    <Label fx:id="lblRecordCount" text="共 0 条记录"/>
-                </HBox>
-            </VBox>
-
-            <!-- 下：编辑表单 -->
-            <VBox spacing="10">
-                <padding>
-                    <Insets top="10" right="15" bottom="15" left="15"/>
-                </padding>
-                <Label text="患者档案编辑" styleClass="form-title"/>
-                <GridPane vgap="10" hgap="15">
-                    <columnConstraints>
-                        <ColumnConstraints minWidth="80" prefWidth="80"/>
-                        <ColumnConstraints prefWidth="200"/>
-                        <ColumnConstraints minWidth="80" prefWidth="80"/>
-                        <ColumnConstraints prefWidth="200"/>
-                        <ColumnConstraints minWidth="80" prefWidth="80"/>
-                        <ColumnConstraints prefWidth="200"/>
-                    </columnConstraints>
-
-                    <!-- 第一行 -->
-                    <Label text="身份证号*" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                    <TextField fx:id="txtIdCard" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-
-                    <Label text="姓名*" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
-                    <TextField fx:id="txtName" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
-
-                    <Label text="性别*" GridPane.rowIndex="0" GridPane.columnIndex="4"/>
-                    <ComboBox fx:id="cmbGender" GridPane.rowIndex="0" GridPane.columnIndex="5" prefWidth="150"/>
-
-                    <!-- 第二行 -->
-                    <Label text="出生日期" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                    <DatePicker fx:id="dpBirthDate" GridPane.rowIndex="1" GridPane.columnIndex="1" prefWidth="150"/>
-
-                    <Label text="手机号" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
-                    <TextField fx:id="txtPhone" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
-
-                    <!-- 第三行 -->
-                    <Label text="住址" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                    <TextField fx:id="txtAddress" GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
-
-                    <!-- 第四行 -->
-                    <Label text="过敏史" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-                    <TextField fx:id="txtAllergy" GridPane.rowIndex="3" GridPane.columnIndex="1" GridPane.columnSpan="5"/>
-                </GridPane>
-                <HBox spacing="10" alignment="CENTER_RIGHT">
-                    <Label fx:id="lblMessage" text="" styleClass="message-label"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Button text="保存" onAction="#handleSave" styleClass="btn-primary"/>
-                    <Button text="清除" onAction="#handleClear"/>
-                    <Button text="删除" onAction="#handleDelete" styleClass="btn-danger"/>
-                </HBox>
-            </VBox>
-        </SplitPane>
+        <VBox spacing="5">
+            <padding>
+                <Insets top="5" right="15" bottom="5" left="15"/>
+            </padding>
+            <TableView fx:id="tablePatients" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colId" text="ID" prefWidth="50"/>
+                    <TableColumn fx:id="colIdCard" text="身份证号" prefWidth="160"/>
+                    <TableColumn fx:id="colName" text="姓名" prefWidth="80"/>
+                    <TableColumn fx:id="colGender" text="性别" prefWidth="60"/>
+                    <TableColumn fx:id="colBirthDate" text="出生日期" prefWidth="100"/>
+                    <TableColumn fx:id="colPhone" text="手机号" prefWidth="120"/>
+                    <TableColumn fx:id="colAddress" text="住址" prefWidth="220"/>
+                    <TableColumn fx:id="colCreateTime" text="建档时间" prefWidth="140"/>
+                    <TableColumn fx:id="colAction" text="操作" prefWidth="140"/>
+                </columns>
+            </TableView>
+            <HBox alignment="CENTER_RIGHT" spacing="10">
+                <Label fx:id="lblRecordCount" text="共 0 条记录"/>
+            </HBox>
+        </VBox>
     </center>
 
 </BorderPane>

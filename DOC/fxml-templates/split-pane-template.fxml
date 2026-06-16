@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  分割面板模板：左右 SplitPane 布局
+  适用模块：挂号预约、医生工作站
+  
+  使用说明：
+  1. 复制此文件并重命名为你的模块视图（如 RegistrationView.fxml）
+  2. 修改 fx:controller 指向你的 Controller 全限定类名
+  3. 左侧通常是列表/表格，右侧是详情/操作区
+  4. 可根据需要改为上下分割（orientation="VERTICAL"）
+-->
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.medicare.controller.YourController"
+            prefWidth="1000" prefHeight="700">
+
+    <!-- 顶部筛选工具栏 -->
+    <top>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="15" right="15" bottom="10" left="15"/>
+            </padding>
+            <Label text="模块标题" styleClass="section-title"/>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="筛选条件:" />
+                <DatePicker fx:id="dpDate" promptText="选择日期"/>
+                <ComboBox fx:id="cmbFilter" promptText="下拉筛选" prefWidth="150"/>
+                <Button text="查询" onAction="#handleSearch" styleClass="btn-primary"/>
+            </HBox>
+            <Separator/>
+        </VBox>
+    </top>
+
+    <!-- 中间：左右分割 -->
+    <center>
+        <SplitPane dividerPositions="0.5">
+            <!-- 左侧：列表区 -->
+            <VBox spacing="5">
+                <padding>
+                    <Insets top="5" right="10" bottom="5" left="15"/>
+                </padding>
+                <Label text="左侧面板标题" styleClass="form-title"/>
+                <TableView fx:id="tableLeft" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colLeft1" text="列1" prefWidth="80"/>
+                        <TableColumn fx:id="colLeft2" text="列2" prefWidth="120"/>
+                        <TableColumn fx:id="colLeft3" text="列3" prefWidth="100"/>
+                    </columns>
+                </TableView>
+                <HBox spacing="10" alignment="CENTER_RIGHT">
+                    <Label fx:id="lblLeftCount" text="共 0 条"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="主要操作" onAction="#handleMainAction" styleClass="btn-success"/>
+                </HBox>
+            </VBox>
+
+            <!-- 右侧：详情/记录区 -->
+            <VBox spacing="5">
+                <padding>
+                    <Insets top="5" right="15" bottom="5" left="10"/>
+                </padding>
+                <Label text="右侧面板标题" styleClass="form-title"/>
+                <!-- 可选：状态筛选按钮组 -->
+                <HBox spacing="5">
+                    <Button text="全部" onAction="#filterAll" styleClass="btn-filter"/>
+                    <Button text="状态1" onAction="#filterStatus1" styleClass="btn-filter"/>
+                    <Button text="状态2" onAction="#filterStatus2" styleClass="btn-filter"/>
+                </HBox>
+                <TableView fx:id="tableRight" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colRight1" text="列1" prefWidth="80"/>
+                        <TableColumn fx:id="colRight2" text="列2" prefWidth="100"/>
+                        <TableColumn fx:id="colRight3" text="列3" prefWidth="100"/>
+                    </columns>
+                </TableView>
+                <HBox spacing="10" alignment="CENTER_RIGHT">
+                    <Label fx:id="lblRightCount" text="共 0 条"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="操作1" onAction="#handleAction1" styleClass="btn-primary"/>
+                    <Button text="操作2" onAction="#handleAction2" styleClass="btn-success"/>
+                    <Button text="操作3" onAction="#handleAction3" styleClass="btn-danger"/>
+                </HBox>
+            </VBox>
+        </SplitPane>
+    </center>
+
+</BorderPane>

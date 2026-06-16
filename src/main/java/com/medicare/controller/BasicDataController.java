@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -75,7 +76,7 @@ public class BasicDataController implements Initializable {
     @FXML private ComboBox<Department> cmbScheduleDeptFilter;
     @FXML private TableView<Schedule> tableSchedules;
     @FXML private TableColumn<Schedule, Long> colScheduleId;
-    @FXML private TableColumn<Schedule, String> colScheduleDate;
+    @FXML private TableColumn<Schedule, LocalDate> colScheduleDate;
     @FXML private TableColumn<Schedule, String> colScheduleDoctor;
     @FXML private TableColumn<Schedule, String> colScheduleDept;
     @FXML private TableColumn<Schedule, String> colScheduleSlot;
@@ -139,6 +140,13 @@ public class BasicDataController implements Initializable {
     private void initScheduleTab() {
         colScheduleId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colScheduleDate.setCellValueFactory(new PropertyValueFactory<>("workDate"));
+        colScheduleDate.setCellFactory(col -> new TableCell<>() {
+            private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            @Override protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setText(empty || date == null ? null : date.format(fmt));
+            }
+        });
         colScheduleDoctor.setCellValueFactory(new PropertyValueFactory<>("doctorName"));
         colScheduleDept.setCellValueFactory(new PropertyValueFactory<>("departmentName"));
         colScheduleSlot.setCellValueFactory(new PropertyValueFactory<>("timeSlot"));

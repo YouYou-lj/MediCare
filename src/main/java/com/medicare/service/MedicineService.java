@@ -55,9 +55,22 @@ public class MedicineService {
     }
 
     public void deleteMedicine(Long id) throws SQLException, IllegalArgumentException {
-        int rows = medicineDAO.delete(id);
-        if (rows == 0) throw new IllegalArgumentException("药品不存在");
-        logger.info("删除药品: id={}", id);
+        Connection conn = null;
+        try {
+            conn = medicineDAO.getConnection();
+            // 先删除关联库存日志（外键约束）
+            inventoryLogDAO.deleteByMedicineId(conn, id);
+            int rows = medicineDAO.delete(conn, id);
+            if (rows == 0) throw new IllegalArgumentException("药品不存在");
+            medicineDAO.commit(conn);
+            logger.info("删除药品: id={}", id);
+        } catch (SQLException e) {
+            medicineDAO.rollback(conn);
+            logger.error("删除药品失败，事务已回滚", e);
+            throw e;
+        } finally {
+            medicineDAO.closeConnection(conn);
+        }
     }
 
     public Medicine getById(Long id) throws SQLException {
@@ -89,8 +102,11 @@ public class MedicineService {
         try {
             conn = medicineDAO.getConnection();
 
-            // 1. 增加库存
-            medicineDAO.updateStock(conn, medicineId, quantity);
+            // 1. 增加库存，同时更新批号和有效期
+            Medicine m = medicineDAO.findById(medicineId);
+            String finalBatchNo = (batchNo != null && !batchNo.isEmpty()) ? batchNo : m.getBatchNo();
+            LocalDate finalExpiry = (expiryDate != null) ? expiryDate : m.getExpiryDate();
+            medicineDAO.updateStockAndInfo(conn, medicineId, quantity, finalBatchNo, finalExpiry);
 
             // 2. 记录日志
             InventoryLog log = new InventoryLog();

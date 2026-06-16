@@ -46,6 +46,17 @@ public class InventoryLogDAO extends BaseDAO<InventoryLog> {
                 log.getBatchNo(), log.getExpiryDate(), log.getOperator(), log.getRemark());
     }
 
+    private static final String SQL_DELETE_BY_MEDICINE =
+            "DELETE FROM inventory_log WHERE medicine_id = ?";
+
+    // ============================================================
+    // 事务方法
+    // ============================================================
+
+    public int deleteByMedicineId(Connection conn, Long medicineId) throws SQLException {
+        return executeUpdate(conn, SQL_DELETE_BY_MEDICINE, medicineId);
+    }
+
     // ============================================================
     // 非事务查询
     // ============================================================

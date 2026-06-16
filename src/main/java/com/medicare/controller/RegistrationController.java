@@ -10,31 +10,31 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ResourceBundle;
 
 /**
  * 挂号预约控制器
- * 核心业务流程：选患者 → 选号源 → 挂号 → 叫号/完成/取消
- *
- * @author MediCare Team
- * @date 2026-06-10
+ * 核心业务流程：选号源 → 弹窗选患者 → 挂号 → 叫号/完成/取消
  */
 public class RegistrationController implements Initializable {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistrationController.class);
 
     private final ScheduleService scheduleService = new ScheduleService();
-    private final PatientService patientService = new PatientService();
     private final RegistrationService registrationService = new RegistrationService();
     private final DepartmentService departmentService = new DepartmentService();
 
@@ -42,14 +42,11 @@ public class RegistrationController implements Initializable {
     private final ObservableList<Registration> regList = FXCollections.observableArrayList();
     private final ObservableList<Department> deptOptions = FXCollections.observableArrayList();
 
-    private Patient selectedPatient = null;
     private Integer currentFilterStatus = null;
 
     // ========== FXML 注入 ==========
     @FXML private DatePicker dpWorkDate;
     @FXML private ComboBox<Department> cmbDepartmentFilter;
-    @FXML private TextField txtPatientSearch;
-    @FXML private Label lblSelectedPatient;
     @FXML private TableView<Schedule> tableSchedules;
     @FXML private TableColumn<Schedule, Long> colSchId;
     @FXML private TableColumn<Schedule, String> colSchDoctor, colSchDept, colSchSlot;
@@ -59,7 +56,7 @@ public class RegistrationController implements Initializable {
     @FXML private TableColumn<Registration, Integer> colRegSeq;
     @FXML private TableColumn<Registration, String> colRegPatient, colRegDoctor, colRegDept, colRegSlot;
     @FXML private TableColumn<Registration, Integer> colRegStatus;
-    @FXML private TableColumn<Registration, String> colRegTime;
+    @FXML private TableColumn<Registration, LocalDateTime> colRegTime;
     @FXML private Label lblRegCount;
     @FXML private Label lblStatus;
 
@@ -114,17 +111,24 @@ public class RegistrationController implements Initializable {
                     setText(null);
                     setStyle("");
                 } else {
-                    setText(new Registration().getStatusText(status));
+                    setText(Registration.getStatusText(status));
                     switch (status) {
-                        case 0 -> setStyle("-fx-text-fill: #f39c12;"); // 候诊 - 黄
-                        case 1 -> setStyle("-fx-text-fill: #3498db; -fx-font-weight: bold;"); // 就诊中 - 蓝
-                        case 2 -> setStyle("-fx-text-fill: #27ae60;"); // 已完成 - 绿
-                        case 3 -> setStyle("-fx-text-fill: #7f8c8d;"); // 已取消 - 灰
+                        case 0 -> setStyle("-fx-text-fill: #f39c12;");
+                        case 1 -> setStyle("-fx-text-fill: #3498db; -fx-font-weight: bold;");
+                        case 2 -> setStyle("-fx-text-fill: #27ae60;");
+                        case 3 -> setStyle("-fx-text-fill: #7f8c8d;");
                     }
                 }
             }
         });
         colRegTime.setCellValueFactory(new PropertyValueFactory<>("regTime"));
+        colRegTime.setCellFactory(col -> new TableCell<>() {
+            private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            @Override protected void updateItem(LocalDateTime dt, boolean empty) {
+                super.updateItem(dt, empty);
+                setText(empty || dt == null ? null : dt.format(fmt));
+            }
+        });
         tableRegistrations.setItems(regList);
     }
 
@@ -185,36 +189,6 @@ public class RegistrationController implements Initializable {
     }
 
     // ============================================================
-    // 患者搜索
-    // ============================================================
-
-    @FXML
-    private void handleSearchPatient() {
-        String keyword = txtPatientSearch.getText().trim();
-        if (keyword.isEmpty()) {
-            lblSelectedPatient.setText("请输入身份证号或姓名");
-            return;
-        }
-        Task<List<Patient>> task = new Task<>() {
-            @Override protected List<Patient> call() throws Exception {
-                return patientService.search(keyword);
-            }
-        };
-        task.setOnSucceeded(e -> Platform.runLater(() -> {
-            List<Patient> list = task.getValue();
-            if (list.isEmpty()) {
-                lblSelectedPatient.setText("未找到患者，请先建档");
-                selectedPatient = null;
-            } else {
-                selectedPatient = list.get(0);
-                lblSelectedPatient.setText("已选择: " + selectedPatient.getName() + " (" + selectedPatient.getIdCard() + ")");
-            }
-        }));
-        task.setOnFailed(e -> Platform.runLater(() -> lblSelectedPatient.setText("查询失败")));
-        new Thread(task).start();
-    }
-
-    // ============================================================
     // 号源查询
     // ============================================================
 
@@ -224,15 +198,11 @@ public class RegistrationController implements Initializable {
     }
 
     // ============================================================
-    // 挂号
+    // 挂号（弹窗选择患者）
     // ============================================================
 
     @FXML
     private void handleRegister() {
-        if (selectedPatient == null) {
-            lblStatus.setText("请先查找并选择患者");
-            return;
-        }
         Schedule schedule = tableSchedules.getSelectionModel().getSelectedItem();
         if (schedule == null) {
             lblStatus.setText("请选择号源");
@@ -243,8 +213,43 @@ public class RegistrationController implements Initializable {
             return;
         }
 
+        openPatientSelectDialog(schedule);
+    }
+
+    private void openPatientSelectDialog(Schedule schedule) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/PatientSelectDialog.fxml"));
+            DialogPane pane = loader.load();
+            PatientSelectDialogController controller = loader.getController();
+
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setDialogPane(pane);
+            dialog.setTitle("选择患者");
+
+            final Button okButton = (Button) pane.lookupButton(ButtonType.OK);
+            okButton.setText("确定挂号");
+            okButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+                Patient patient = controller.getSelectedPatient();
+                if (patient == null) {
+                    event.consume();
+                    lblStatus.setText("请先选择患者");
+                    return;
+                }
+                event.consume();
+                dialog.close();
+                doRegister(schedule, patient);
+            });
+
+            dialog.showAndWait();
+        } catch (IOException e) {
+            logger.error("打开患者选择弹窗失败", e);
+            lblStatus.setText("打开弹窗失败");
+        }
+    }
+
+    private void doRegister(Schedule schedule, Patient patient) {
         Registration reg = new Registration();
-        reg.setPatientId(selectedPatient.getId());
+        reg.setPatientId(patient.getId());
         reg.setScheduleId(schedule.getId());
         reg.setFee(BigDecimal.valueOf(10.00));
 
@@ -254,7 +259,7 @@ public class RegistrationController implements Initializable {
             }
         };
         task.setOnSucceeded(e -> Platform.runLater(() -> {
-            lblStatus.setText("挂号成功！序号: " + reg.getSeqNo());
+            lblStatus.setText("挂号成功！患者: " + patient.getName() + " 序号: " + reg.getSeqNo());
             loadScheduleData();
             loadRegData();
         }));

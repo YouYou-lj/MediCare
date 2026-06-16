@@ -18,47 +18,21 @@
             <HBox spacing="10" alignment="CENTER_LEFT">
                 <TextField fx:id="txtAdminSearch" promptText="用户名" prefWidth="200"/>
                 <Button text="查询" onAction="#handleAdminSearch" styleClass="btn-primary"/>
-                <Button text="新增管理员" onAction="#handleAdminNew" styleClass="btn-success"/>
+                <Button text="+ 新增管理员" onAction="#handleAdminAdd" styleClass="btn-success"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="lblAdminCount" text="共 0 条"/>
             </HBox>
-            <SplitPane dividerPositions="0.5" VBox.vgrow="ALWAYS">
-                <TableView fx:id="tableAdmins">
-                    <columns>
-                        <TableColumn fx:id="colAdminId" text="ID" prefWidth="60"/>
-                        <TableColumn fx:id="colAdminUsername" text="用户名" prefWidth="150"/>
-                        <TableColumn fx:id="colAdminRealName" text="姓名" prefWidth="150"/>
-                        <TableColumn fx:id="colAdminStatus" text="状态" prefWidth="80"/>
-                        <TableColumn fx:id="colAdminCreateTime" text="创建时间" prefWidth="150"/>
-                    </columns>
-                </TableView>
-                <VBox spacing="10" styleClass="form-panel">
-                    <padding>
-                        <Insets top="10" right="10" bottom="10" left="10"/>
-                    </padding>
-                    <Label text="管理员信息编辑" styleClass="form-title"/>
-                    <GridPane vgap="10" hgap="10">
-                        <Label text="用户名*" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                        <TextField fx:id="txtAdminUsername" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-
-                        <Label text="密码*" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                        <PasswordField fx:id="txtAdminPassword" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-
-                        <Label text="姓名" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                        <TextField fx:id="txtAdminRealName" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-
-                        <Label text="状态" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-                        <ComboBox fx:id="cmbAdminStatus" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
-                    </GridPane>
-                    <HBox spacing="10" alignment="CENTER_RIGHT">
-                        <Label fx:id="lblAdminMessage" text=""/>
-                        <Region HBox.hgrow="ALWAYS"/>
-                        <Button text="保存" onAction="#handleAdminSave" styleClass="btn-primary"/>
-                        <Button text="清除" onAction="#handleAdminClear"/>
-                        <Button text="删除" onAction="#handleAdminDelete" styleClass="btn-danger"/>
-                    </HBox>
-                </VBox>
-            </SplitPane>
+            <TableView fx:id="tableAdmins" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colAdminId" text="ID" prefWidth="60"/>
+                    <TableColumn fx:id="colAdminUsername" text="用户名" prefWidth="150"/>
+                    <TableColumn fx:id="colAdminRealName" text="姓名" prefWidth="150"/>
+                    <TableColumn fx:id="colAdminStatus" text="状态" prefWidth="80"/>
+                    <TableColumn fx:id="colAdminCreateTime" text="创建时间" prefWidth="140"/>
+                    <TableColumn fx:id="colAdminAction" text="操作" prefWidth="150"/>
+                </columns>
+            </TableView>
+            <Label fx:id="lblAdminMessage" text=""/>
         </VBox>
     </Tab>
 
