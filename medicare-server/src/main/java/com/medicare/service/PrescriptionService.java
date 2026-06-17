@@ -2,6 +2,7 @@ package com.medicare.service;
 
 import com.medicare.dto.InventoryLogVO;
 import com.medicare.dto.PrescriptionItemVO;
+import com.medicare.dto.PrescriptionListVO;
 import com.medicare.dto.PrescriptionVO;
 import com.medicare.entity.*;
 import com.medicare.exception.BusinessException;
@@ -116,7 +117,7 @@ public class PrescriptionService {
     /**
      * 处方列表查询（带患者名、医生名）
      */
-    public List<PrescriptionVO> listPrescriptionVOs(Long patientId, Boolean today) {
+    public List<PrescriptionListVO> listPrescriptionVOs(Long patientId, Boolean today) {
         LocalDate todayDate = (today != null && today) ? LocalDate.now() : null;
         return prescriptionRepository.findPrescriptionVOList(patientId, todayDate);
     }

@@ -3,6 +3,7 @@ package com.medicare.controller;
 import com.medicare.auth.RequireRole;
 import com.medicare.dto.InventoryLogVO;
 import com.medicare.dto.PrescriptionCreateRequest;
+import com.medicare.dto.PrescriptionListVO;
 import com.medicare.dto.PrescriptionVO;
 import com.medicare.dto.Result;
 import com.medicare.entity.Prescription;
@@ -23,7 +24,7 @@ public class PrescriptionController {
 
     @GetMapping
     @RequireRole({"admin", "doctor", "pharmacist"})
-    public Result<List<PrescriptionVO>> list(@RequestParam(required = false) Long patientId,
+    public Result<List<PrescriptionListVO>> list(@RequestParam(required = false) Long patientId,
                                             @RequestParam(required = false) Boolean today) {
         return Result.ok(prescriptionService.listPrescriptionVOs(patientId, today));
     }

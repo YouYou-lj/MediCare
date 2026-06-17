@@ -4,20 +4,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 挂号视图对象 — 4 表 LEFT JOIN 投影（接口投影）
+ * 处方列表视图对象 — 接口投影（不含明细）
  */
-public interface RegistrationVO {
+public interface PrescriptionListVO {
     Long getId();
+    Long getRecordId();
     Long getPatientId();
-    Long getScheduleId();
     Long getDoctorId();
-    LocalDateTime getRegTime();
+    BigDecimal getTotalAmount();
     Integer getStatus();
-    Integer getSeqNo();
-    BigDecimal getFee();
     LocalDateTime getCreateTime();
     String getPatientName();
     String getDoctorName();
-    String getDepartmentName();
-    String getTimeSlot();
 }

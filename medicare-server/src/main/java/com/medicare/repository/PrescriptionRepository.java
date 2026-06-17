@@ -1,5 +1,6 @@
 package com.medicare.repository;
 
+import com.medicare.dto.PrescriptionListVO;
 import com.medicare.dto.PrescriptionVO;
 import com.medicare.entity.Prescription;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,7 +33,7 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
             + "AND (:today IS NULL OR DATE(p.create_time) = :today) "
             + "ORDER BY p.create_time DESC",
             nativeQuery = true)
-    List<PrescriptionVO> findPrescriptionVOList(@Param("patientId") Long patientId, @Param("today") LocalDate today);
+    List<PrescriptionListVO> findPrescriptionVOList(@Param("patientId") Long patientId, @Param("today") LocalDate today);
 
     /**
      * 取药 — 状态改为已取药(2)
