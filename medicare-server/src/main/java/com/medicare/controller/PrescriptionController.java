@@ -22,9 +22,9 @@ public class PrescriptionController {
 
     @GetMapping
     @RequireRole({"admin", "doctor", "pharmacist"})
-    public Result<List<Prescription>> list() {
-        // 简化：返回全部处方实体列表，前端再查详情
-        return Result.ok(List.of()); // TODO: 需添加查询方法
+    public Result<List<PrescriptionVO>> list(@RequestParam(required = false) Long patientId,
+                                            @RequestParam(required = false) Boolean today) {
+        return Result.ok(prescriptionService.listPrescriptionVOs(patientId, today));
     }
 
     @GetMapping("/{id}")

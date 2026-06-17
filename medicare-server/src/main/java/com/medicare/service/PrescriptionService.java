@@ -11,8 +11,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -110,7 +114,16 @@ public class PrescriptionService {
     }
 
     /**
+     * 处方列表查询（带患者名、医生名）
+     */
+    public List<PrescriptionVO> listPrescriptionVOs(Long patientId, Boolean today) {
+        LocalDate todayDate = (today != null && today) ? LocalDate.now() : null;
+        return prescriptionRepository.findPrescriptionVOList(patientId, todayDate);
+    }
+
+    /**
      * 查询处方详情（带明细和关联名称）
+     * 优化：使用批量查询替代 N+1
      */
     public PrescriptionVO findPrescriptionVOById(Long id) {
         Prescription prescription = prescriptionRepository.findById(id)
@@ -131,8 +144,12 @@ public class PrescriptionService {
         doctorRepository.findById(prescription.getDoctorId())
                 .ifPresent(d -> vo.setDoctorName(d.getName()));
 
-        // 明细列表
+        // 明细列表 — 批量查询药品信息，避免 N+1
         List<PrescriptionItem> items = prescriptionItemRepository.findByPrescriptionId(id);
+        List<Long> medicineIds = items.stream().map(PrescriptionItem::getMedicineId).distinct().toList();
+        Map<Long, Medicine> medicineMap = medicineRepository.findAllById(medicineIds)
+                .stream().collect(Collectors.toMap(Medicine::getId, Function.identity()));
+
         List<PrescriptionItemVO> itemVOs = new ArrayList<>();
         for (PrescriptionItem item : items) {
             PrescriptionItemVO itemVO = new PrescriptionItemVO();
@@ -144,12 +161,12 @@ public class PrescriptionService {
             itemVO.setUsageDesc(item.getUsageDesc());
             itemVO.setUnitPrice(item.getUnitPrice());
             itemVO.setAmount(item.getAmount());
-            // 关联药品名称
-            medicineRepository.findById(item.getMedicineId()).ifPresent(m -> {
-                itemVO.setMedicineName(m.getName());
-                itemVO.setMedicineSpec(m.getSpec());
-                itemVO.setMedicineUnit(m.getUnit());
-            });
+            Medicine med = medicineMap.get(item.getMedicineId());
+            if (med != null) {
+                itemVO.setMedicineName(med.getName());
+                itemVO.setMedicineSpec(med.getSpec());
+                itemVO.setMedicineUnit(med.getUnit());
+            }
             itemVOs.add(itemVO);
         }
         vo.setItems(itemVOs);
