@@ -1,0 +1,1 @@
+import{r as o}from"./index-D4Q8mi8o.js";function c(t){return o.get("/doctors",{params:{deptId:t}})}function s(t){return o.post("/doctors",t)}function n(t,r){return o.put(`/doctors/${t}`,r)}function u(t){return o.delete(`/doctors/${t}`)}export{s as c,u as d,c as l,n as u};

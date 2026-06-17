@@ -1,0 +1,1 @@
+import{r}from"./index-D4Q8mi8o.js";function n(t,e){return r.get("/registrations",{params:{date:t,status:e}})}function s(t){return r.post("/registrations",t)}function a(t){return r.put(`/registrations/${t}/call`)}function o(t){return r.put(`/registrations/${t}/complete`)}function u(t){return r.delete(`/registrations/${t}`)}export{a,o as b,u as c,n as l,s as r};
