@@ -52,7 +52,7 @@ async function handleLogin() {
   loading.value = true
   try {
     const res = await login(form)
-    userStore.setUser(res.data.user)
+    userStore.setUser(res.data)
     ElMessage.success('登录成功')
     router.push('/')
   } catch {
