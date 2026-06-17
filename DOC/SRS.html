@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCare SRS 软件需求规格说明书</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Noto Sans SC", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif; color: #2c3e50; background: #fff; line-height: 1.8; font-size: 14px; }
+        .cover { page-break-after: always; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; text-align: center; padding: 40px; }
+        .cover h1 { font-size: 42px; letter-spacing: 4px; margin-bottom: 16px; }
+        .cover h2 { font-size: 22px; font-weight: 400; color: #a8b2d1; margin-bottom: 40px; }
+        .cover .meta { font-size: 14px; color: #8892b0; line-height: 2; }
+        .cover .logo { font-size: 72px; margin-bottom: 20px; }
+        .content { max-width: 900px; margin: 0 auto; padding: 40px 60px; }
+        h1 { font-size: 26px; color: #1a1a2e; margin: 50px 0 20px; padding-bottom: 10px; border-bottom: 3px solid #e94560; }
+        h2 { font-size: 20px; color: #0f3460; margin: 36px 0 16px; padding-left: 12px; border-left: 4px solid #e94560; }
+        h3 { font-size: 16px; color: #16213e; margin: 24px 0 10px; }
+        h4 { font-size: 14px; color: #333; margin: 16px 0 8px; }
+        p { margin: 8px 0; text-align: justify; }
+        ul, ol { margin: 8px 0 8px 24px; }
+        li { margin: 4px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+        th { background: #f0f4f8; color: #1a1a2e; font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid #ddd; }
+        td { padding: 8px 12px; border: 1px solid #ddd; vertical-align: top; }
+        .screenshot { margin: 16px 0; text-align: center; }
+        .screenshot img { max-width: 100%; border: 1px solid #e0e0e0; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,.1); }
+        .screenshot .caption { font-size: 12px; color: #888; margin-top: 6px; }
+        .req { background: #f8f9fa; border-left: 4px solid #e94560; padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; }
+        .req-id { font-weight: 700; color: #e94560; margin-right: 8px; font-family: monospace; }
+        .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
+        .tag-func { background: #e3f2fd; color: #1565c0; }
+        .tag-nf { background: #fff3e0; color: #e65100; }
+        .tag-ui { background: #e8f5e9; color: #2e7d32; }
+        .tag-security { background: #fce4ec; color: #c62828; }
+        .toc { background: #f8f9fa; padding: 24px 32px; border-radius: 8px; margin: 20px 0; }
+        .toc a { color: #0f3460; text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
+        .toc ul { list-style: none; margin-left: 0; }
+        .toc > ul > li { margin: 6px 0; font-weight: 600; }
+        .toc ul ul { margin-left: 20px; }
+        .toc ul ul li { font-weight: 400; margin: 3px 0; }
+        .flow-diagram { background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 16px 0; text-align: center; font-family: monospace; }
+        .flow-step { display: inline-block; background: #e94560; color: #fff; padding: 6px 16px; border-radius: 20px; margin: 4px; font-size: 13px; }
+        .flow-arrow { color: #999; font-size: 18px; margin: 0 4px; }
+        @media print { .cover { height: auto; min-height: 100vh; } .content { padding: 20px; } }
+    </style>
+</head>
+<body>
+
+<!-- ==================== 封面 ==================== -->
+<div class="cover">
+    <div class="logo">🏥</div>
+    <h1>MediCare</h1>
+    <h2>智慧医疗门诊管理系统 — 软件需求规格说明书</h2>
+    <div class="meta">
+        <p>文档版本：V1.0</p>
+        <p>编制日期：2026年6月</p>
+        <p>技术架构：Vue 3 + Spring Boot + MySQL</p>
+    </div>
+</div>
+
+<!-- ==================== 目录 ==================== -->
+<div class="content">
+
+<div class="toc">
+    <h2 style="border:none; padding:0; margin:0 0 12px;">目 录</h2>
+    <ul>
+        <li><a href="#1">1. 引言</a>
+            <ul>
+                <li><a href="#1.1">1.1 编写目的</a></li>
+                <li><a href="#1.2">1.2 项目概述</a></li>
+                <li><a href="#1.3">1.3 系统范围</a></li>
+                <li><a href="#1.4">1.4 术语与缩写</a></li>
+            </ul>
+        </li>
+        <li><a href="#2">2. 总体描述</a>
+            <ul>
+                <li><a href="#2.1">2.1 系统架构</a></li>
+                <li><a href="#2.2">2.2 用户角色</a></li>
+                <li><a href="#2.3">2.3 运行环境</a></li>
+                <li><a href="#2.4">2.4 设计约束</a></li>
+            </ul>
+        </li>
+        <li><a href="#3">3. 功能需求</a>
+            <ul>
+                <li><a href="#3.1">3.1 认证与授权</a></li>
+                <li><a href="#3.2">3.2 仪表盘</a></li>
+                <li><a href="#3.3">3.3 患者管理</a></li>
+                <li><a href="#3.4">3.4 基础数据管理</a></li>
+                <li><a href="#3.5">3.5 挂号预约</a></li>
+                <li><a href="#3.6">3.6 医生工作站</a></li>
+                <li><a href="#3.7">3.7 病历管理</a></li>
+                <li><a href="#3.8">3.8 药品库存管理</a></li>
+                <li><a href="#3.9">3.9 处方管理</a></li>
+                <li><a href="#3.10">3.10 系统设置</a></li>
+            </ul>
+        </li>
+        <li><a href="#4">4. 非功能需求</a></li>
+        <li><a href="#5">5. 数据需求</a></li>
+        <li><a href="#6">6. 接口需求</a></li>
+    </ul>
+</div>
+
+<!-- ==================== 1. 引言 ==================== -->
+<h1 id="1">1. 引言</h1>
+
+<h2 id="1.1">1.1 编写目的</h2>
+<p>本文档定义 MediCare 智慧医疗门诊管理系统的软件需求规格，作为系统设计、开发、测试和验收的基准。面向读者包括项目经理、开发工程师、测试工程师和客户代表。</p>
+
+<h2 id="1.2">1.2 项目概述</h2>
+<p>MediCare 是面向基层医疗机构的门诊管理信息系统，覆盖挂号、就诊、处方、药品库存等核心业务流程。系统采用前后端分离架构，前端基于 Vue 3 + Element Plus 构建，后端基于 Spring Boot + Spring Data JPA，数据库使用 MySQL。</p>
+
+<h2 id="1.3">1.3 系统范围</h2>
+<p>系统覆盖以下业务域：</p>
+<ul>
+    <li>患者信息管理 — 患者档案的增删改查与搜索</li>
+    <li>基础数据管理 — 科室、医生、排班的基础维护</li>
+    <li>挂号预约 — 号源查询、挂号、叫号、完成就诊、取消</li>
+    <li>医生工作站 — 叫号接诊、书写病历</li>
+    <li>病历管理 — 门诊病历的创建与更新</li>
+    <li>药品库存 — 药品信息维护、入库/出库、库存预警</li>
+    <li>处方管理 — 开处方、取药、作废处方</li>
+    <li>系统管理 — 用户管理、修改密码</li>
+</ul>
+
+<h2 id="1.4">1.4 术语与缩写</h2>
+<table>
+    <tr><th>术语</th><th>含义</th></tr>
+    <tr><td>VO (View Object)</td><td>视图对象，用于前端展示的数据结构，包含关联查询的冗余字段</td></tr>
+    <tr><td>DTO (Data Transfer Object)</td><td>数据传输对象，用于前后端交互的请求/响应结构</td></tr>
+    <tr><td>CRUD</td><td>Create / Read / Update / Delete，增删改查</td></tr>
+    <tr><td>BCrypt</td><td>密码哈希算法，自带盐值，用于安全存储密码</td></tr>
+    <tr><td>Session</td><td>HTTP 会话，服务端存储用户登录状态</td></tr>
+    <tr><td>乐观锁</td><td>通过版本号/条件判断实现并发控制，避免数据冲突</td></tr>
+    <tr><td>原子扣减</td><td>使用 SQL WHERE 条件（如 WHERE stock >= qty）保证并发安全</td></tr>
+</table>
+
+<!-- ==================== 2. 总体描述 ==================== -->
+<h1 id="2">2. 总体描述</h1>
+
+<h2 id="2.1">2.1 系统架构</h2>
+<p>系统采用前后端分离的四层架构：</p>
+<table>
+    <tr><th>层次</th><th>技术栈</th><th>职责</th></tr>
+    <tr><td>前端展示层</td><td>Vue 3 + Element Plus + Vite</td><td>页面渲染、交互逻辑、路由管理、状态管理</td></tr>
+    <tr><td>接口层</td><td>Spring Boot REST Controller</td><td>请求分发、参数校验、权限控制(@RequireRole)</td></tr>
+    <tr><td>业务逻辑层</td><td>Spring Service + @Transactional</td><td>业务规则校验、事务编排、库存安全扣减</td></tr>
+    <tr><td>数据访问层</td><td>Spring Data JPA + MySQL</td><td>实体持久化、原生SQL投影查询、原子操作</td></tr>
+</table>
+
+<p>认证机制：Session + Cookie；权限控制：AOP 切面 + 自定义 @RequireRole 注解。</p>
+
+<h2 id="2.2">2.2 用户角色</h2>
+<table>
+    <tr><th>角色</th><th>角色代码</th><th>职责范围</th></tr>
+    <tr><td>管理员</td><td>admin</td><td>全部功能，包括基础数据维护、用户管理、挂号操作</td></tr>
+    <tr><td>医生</td><td>doctor</td><td>叫号接诊、病历书写、开处方、查看患者和药品</td></tr>
+    <tr><td>药师</td><td>pharmacist</td><td>药品入库/出库、库存预警、取药/作废处方</td></tr>
+</table>
+
+<h2 id="2.3">2.3 运行环境</h2>
+<table>
+    <tr><th>项目</th><th>要求</th></tr>
+    <tr><td>操作系统</td><td>macOS / Linux / Windows</td></tr>
+    <tr><td>JDK</td><td>17+</td></tr>
+    <tr><td>Node.js</td><td>18+</td></tr>
+    <tr><td>MySQL</td><td>8.0+</td></tr>
+    <tr><td>浏览器</td><td>Chrome / Edge / Safari 最新版</td></tr>
+    <tr><td>后端端口</td><td>8080</td></tr>
+    <tr><td>前端端口</td><td>5173（开发模式）</td></tr>
+</table>
+
+<h2 id="2.4">2.4 设计约束</h2>
+<ul>
+    <li>前后端必须分离部署，通过 RESTful API 通信</li>
+    <li>认证采用 Session 机制，前端需设置 withCredentials 携带 Cookie</li>
+    <li>库存扣减必须使用原子操作（WHERE stock >= qty），防止超卖</li>
+    <li>原生 SQL 投影查询必须使用接口投影（Interface Projection），不能用 @Data class</li>
+    <li>密码存储必须使用 BCrypt 加密</li>
+</ul>
+
+<!-- ==================== 3. 功能需求 ==================== -->
+<h1 id="3">3. 功能需求</h1>
+
+<!-- 3.1 认证与授权 -->
+<h2 id="3.1">3.1 认证与授权</h2>
+
+<h3>3.1.1 功能描述</h3>
+<p>提供用户登录、登出、获取当前登录用户信息的功能。系统采用 Session + Cookie 机制进行身份认证，通过 AOP 切面校验角色权限。</p>
+
+<div class="req">
+    <span class="req-id">REQ-AUTH-01</span>用户可通过用户名和密码登录系统。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-AUTH-02</span>登录成功后，系统将用户信息存入 HttpSession，密码字段置空后返回给前端。<span class="tag tag-security">安全需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-AUTH-03</span>密码验证兼容明文密码和 BCrypt 加密密码（迁移过渡期）。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-AUTH-04</span>被禁用的账号（status ≠ 1）无法登录，提示"账号已被禁用"。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-AUTH-05</span>未登录用户访问受保护接口时返回 401 状态码。<span class="tag tag-security">安全需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-AUTH-06</span>角色权限由 @RequireRole 注解声明，RoleCheckAspect 切面在方法执行前校验；角色不匹配时抛出 BusinessException。<span class="tag tag-security">安全需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-AUTH-07</span>用户登出时销毁 Session。<span class="tag tag-func">功能需求</span>
+</div>
+
+<h3>3.1.2 界面原型</h3>
+<div class="screenshot">
+    <img src="screenshots/01-login.png" alt="登录界面">
+    <div class="caption">图 3-1 登录界面</div>
+</div>
+
+<h3>3.1.3 业务流程</h3>
+<div class="flow-diagram">
+    <span class="flow-step">POST /api/auth/login</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Session 写入用户</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">后续请求携带 Cookie</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">AuthInterceptor 校验</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">@RequireRole 角色校验</span>
+</div>
+
+<!-- 3.2 仪表盘 -->
+<h2 id="3.2">3.2 仪表盘</h2>
+
+<h3>3.2.1 功能描述</h3>
+<p>首页仪表盘展示门诊当日关键运营指标，帮助管理者快速掌握业务概况。</p>
+
+<div class="req">
+    <span class="req-id">REQ-DASH-01</span>仪表盘展示三项统计指标：今日挂号数、候诊人数、库存预警数。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-DASH-02</span>今日挂号数统计当天所有状态的挂号记录总数。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-DASH-03</span>候诊人数统计当天状态为"候诊"(status=0)的挂号记录数。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-DASH-04</span>库存预警数统计库存低于安全存量的药品种类数。<span class="tag tag-func">功能需求</span>
+</div>
+
+<h3>3.2.2 界面原型</h3>
+<div class="screenshot">
+    <img src="screenshots/02-dashboard.png" alt="仪表盘界面">
+    <div class="caption">图 3-2 仪表盘界面</div>
+</div>
+
+<!-- 3.3 患者管理 -->
+<h2 id="3.3">3.3 患者管理</h2>
+
+<h3>3.3.1 功能描述</h3>
+<p>管理患者基本信息，包括建档、编辑、删除和搜索。患者是挂号的前置依赖。</p>
+
+<div class="req">
+    <span class="req-id">REQ-PAT-01</span>支持分页查询患者列表，默认每页20条。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-PAT-02</span>支持按姓名、身份证号、手机号进行模糊搜索。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-PAT-03</span>创建患者时校验身份证号唯一性，重复则拒绝。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-PAT-04</span>更新患者时校验身份证号唯一性（排除自身）。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-PAT-05</span>删除患者前需确认无关联挂号记录。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-PAT-06</span>患者信息包括：姓名、性别、身份证号、出生日期、手机号、地址、过敏信息。<span class="tag tag-ui">数据字段</span>
+</div>
+
+<h3>3.3.2 界面原型</h3>
+<div class="screenshot">
+    <img src="screenshots/03-patient.png" alt="患者管理界面">
+    <div class="caption">图 3-3 患者管理界面</div>
+</div>
+
+<!-- 3.4 基础数据管理 -->
+<h2 id="3.4">3.4 基础数据管理</h2>
+
+<h3>3.4.1 功能描述</h3>
+<p>管理科室、医生、排班三类基础数据，是挂号和就诊的前置依赖。页面以 Tab 标签页形式呈现三个子模块。</p>
+
+<h4>科室管理</h4>
+<div class="req">
+    <span class="req-id">REQ-DEPT-01</span>科室信息包括：名称（唯一）、位置、电话。<span class="tag tag-ui">数据字段</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-DEPT-02</span>创建/更新科室时校验名称唯一性。<span class="tag tag-func">功能需求</span>
+</div>
+
+<h4>医生管理</h4>
+<div class="req">
+    <span class="req-id">REQ-DOC-01</span>医生信息包括：姓名、所属科室ID、职称、在职状态。<span class="tag tag-ui">数据字段</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-DOC-02</span>创建/更新医生时校验科室存在。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-DOC-03</span>医生列表返回 DoctorVO（含科室名称，通过原生SQL关联查询）。<span class="tag tag-func">功能需求</span>
+</div>
+
+<h4>排班管理</h4>
+<div class="req">
+    <span class="req-id">REQ-SCHED-01</span>排班信息包括：医生ID、出诊日期、时段(上午/下午/晚上)、总号源数、剩余号源数。<span class="tag tag-ui">数据字段</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-SCHED-02</span>创建排班时自动将剩余号源设为总号源数。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-SCHED-03</span>提供"可用号源"查询接口，仅返回剩余号源 > 0 的排班。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-SCHED-04</span>排班列表返回 ScheduleVO（含医生名、科室名）。<span class="tag tag-func">功能需求</span>
+</div>
+
+<h3>3.4.2 界面原型</h3>
+<div class="screenshot">
+    <img src="screenshots/08-basic-data.png" alt="基础数据管理界面">
+    <div class="caption">图 3-4 基础数据管理界面（科室管理 Tab）</div>
+</div>
+
+<!-- 3.5 挂号预约 -->
+<h2 id="3.5">3.5 挂号预约</h2>
+
+<h3>3.5.1 功能描述</h3>
+<p>挂号是门诊核心流程的起点，连接患者、排班和医生工作站。支持号源查询、挂号、叫号、完成就诊和取消挂号。</p>
+
+<div class="req">
+    <span class="req-id">REQ-REG-01</span>挂号时需选择患者和排班（号源），系统在事务内原子扣减号源（WHERE remain_slots > 0），防止超卖。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-REG-02</span>号源不足时提示"号源不足，请选择其他号源"。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-REG-03</span>挂号时从 schedule 复制 doctorId 到 registration，保障历史数据医生归属稳定。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-REG-04</span>挂号时自动分配序号（同排班内递增）。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-REG-05</span>挂号状态流转：候诊(0) → 就诊中(1) → 已完成(2)。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-REG-06</span>叫号操作将状态从候诊(0)改为就诊中(1)，仅允许对候诊状态操作。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-REG-07</span>完成就诊操作将状态从就诊中(1)改为已完成(2)。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-REG-08</span>取消挂号时将状态改为已取消(3)，同时在事务内回增号源。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-REG-09</span>已完成的挂号不能取消。<span class="tag tag-func">功能需求</span>
+</div>
+
+<h3>3.5.2 界面原型</h3>
+<div class="screenshot">
+    <img src="screenshots/04-registration.png" alt="挂号预约界面">
+    <div class="caption">图 3-5 挂号预约界面</div>
+</div>
+
+<h3>3.5.3 状态流转</h3>
+<div class="flow-diagram">
+    <span class="flow-step">候诊 (0)</span>
+    <span class="flow-arrow">→叫号→</span>
+    <span class="flow-step">就诊中 (1)</span>
+    <span class="flow-arrow">→完成→</span>
+    <span class="flow-step">已完成 (2)</span>
+    <br><br>
+    <span class="flow-step">候诊/就诊中</span>
+    <span class="flow-arrow">→取消→</span>
+    <span class="flow-step">已取消 (3) + 回增号源</span>
+</div>
+
+<!-- 3.6 医生工作站 -->
+<h2 id="3.6">3.6 医生工作站</h2>
+
+<h3>3.6.1 功能描述</h3>
+<p>医生工作站是门诊就诊的核心工作台，提供叫号、书写病历、开处方的集成工作流。</p>
+
+<div class="req">
+    <span class="req-id">REQ-WS-01</span>医生选择自己后，系统加载该医生今日候诊和就诊中的患者列表。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-WS-02</span>叫号后，患者状态变为"就诊中"，医生可进行诊断。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-WS-03</span>完成就诊后，患者状态变为"已完成"。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-WS-04</span>工作站集成病历编辑和处方编辑功能，在就诊中状态下可操作。<span class="tag tag-func">功能需求</span>
+</div>
+
+<h3>3.6.2 界面原型</h3>
+<div class="screenshot">
+    <img src="screenshots/05-doctor-workstation.png" alt="医生工作站界面">
+    <div class="caption">图 3-6 医生工作站界面</div>
+</div>
+
+<!-- 3.7 病历管理 -->
+<h2 id="3.7">3.7 病历管理</h2>
+
+<h3>3.7.1 功能描述</h3>
+<p>病历与挂号为 1:1 关系，一个挂号只能创建一份病历。病历包含主诉、现病史、既往史、体格检查、诊断和医嘱。</p>
+
+<div class="req">
+    <span class="req-id">REQ-MR-01</span>病历字段包括：挂号ID、患者ID、医生ID、主诉、现病史、既往史、体格检查、诊断、医嘱。<span class="tag tag-ui">数据字段</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MR-02</span>同一挂号不允许重复创建病历。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MR-03</span>支持按患者ID或挂号ID筛选查询。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MR-04</span>更新病历时仅允许修改医学字段（主诉/现病史/既往史/体格检查/诊断/医嘱）。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MR-05</span>支持按挂号ID直接查询对应病历。<span class="tag tag-func">功能需求</span>
+</div>
+
+<!-- 3.8 药品库存管理 -->
+<h2 id="3.8">3.8 药品库存管理</h2>
+
+<h3>3.8.1 功能描述</h3>
+<p>管理药品信息和库存，支持入库、出库和库存预警。药品名称+规格组合唯一。</p>
+
+<div class="req">
+    <span class="req-id">REQ-MED-01</span>药品信息包括：名称、规格、单位、单价、库存、安全库存、拼音码、生产厂家、状态。<span class="tag tag-ui">数据字段</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MED-02</span>创建/更新药品时校验名称+规格组合唯一性。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MED-03</span>入库操作在事务内增加库存 + 记录库存日志（含批次号、有效期、操作人、备注）。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MED-04</span>出库操作在事务内安全扣减库存（WHERE stock >= qty 防超卖）+ 记录库存日志。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MED-05</span>库存不足时出库失败，提示"库存不足"。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MED-06</span>库存预警功能查询库存低于安全存量的药品。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MED-07</span>支持按关键词（名称/拼音码/厂家）搜索药品。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-MED-08</span>库存变动日志记录每次入库/出库操作，包含：药品ID、类型(in/out)、数量、批次号、有效期、操作人、备注。<span class="tag tag-func">功能需求</span>
+</div>
+
+<h3>3.8.2 界面原型</h3>
+<div class="screenshot">
+    <img src="screenshots/06-pharmacy.png" alt="药品库存管理界面">
+    <div class="caption">图 3-7 药品库存管理界面</div>
+</div>
+
+<!-- 3.9 处方管理 -->
+<h2 id="3.9">3.9 处方管理</h2>
+
+<h3>3.9.1 功能描述</h3>
+<p>处方是连接病历和药品库存的关键环节。医生开处方时自动扣减库存，药师负责取药或作废。</p>
+
+<div class="req">
+    <span class="req-id">REQ-RX-01</span>处方信息包括：病历ID、患者ID、医生ID、总金额、状态。<span class="tag tag-ui">数据字段</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-RX-02</span>处方明细包括：药品ID、数量、用法、用量、单价、小计金额。<span class="tag tag-ui">数据字段</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-RX-03</span>开立处方为事务操作：保存处方主表 + 逐条安全扣减库存 + 记录库存日志 + 保存明细项。任一步骤失败则整体回滚。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-RX-04</span>总金额由明细项小计自动汇总，不需要前端传入。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-RX-05</span>处方状态：待缴费(0) → 已缴费(1) → 已取药(2)；可从待缴费/已缴费作废为已取消(3)。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-RX-06</span>取药操作将处方状态改为已取药(2)，由药师执行。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-RX-07</span>作废处方为事务操作：逐条回滚库存 + 记录库存日志 + 更新处方状态。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-RX-08</span>已取药的处方不能作废。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-RX-09</span>处方详情查询包含明细项及关联的药品名称、规格、单位（批量查询避免 N+1）。<span class="tag tag-func">功能需求</span>
+</div>
+
+<h3>3.9.2 界面原型</h3>
+<div class="screenshot">
+    <img src="screenshots/07-prescription.png" alt="处方管理界面">
+    <div class="caption">图 3-8 处方管理界面</div>
+</div>
+
+<h3>3.9.3 状态流转</h3>
+<div class="flow-diagram">
+    <span class="flow-step">待缴费 (0)</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">已缴费 (1)</span>
+    <span class="flow-arrow">→取药→</span>
+    <span class="flow-step">已取药 (2)</span>
+    <br><br>
+    <span class="flow-step">待缴费/已缴费</span>
+    <span class="flow-arrow">→作废→</span>
+    <span class="flow-step">已取消 (3) + 回滚库存</span>
+</div>
+
+<!-- 3.10 系统设置 -->
+<h2 id="3.10">3.10 系统设置</h2>
+
+<h3>3.10.1 功能描述</h3>
+<p>管理系统用户账号和密码修改。</p>
+
+<div class="req">
+    <span class="req-id">REQ-SET-01</span>用户信息包括：用户名（唯一）、密码(BCrypt加密)、真实姓名、角色(admin/doctor/pharmacist)、状态、关联医生ID。<span class="tag tag-ui">数据字段</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-SET-02</span>创建用户时密码使用 BCrypt 加密后存储。<span class="tag tag-security">安全需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-SET-03</span>用户名唯一性校验。<span class="tag tag-func">功能需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-SET-04</span>超级管理员 admin 账号禁止删除。<span class="tag tag-security">安全需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-SET-05</span>修改密码限制只能修改自己的密码，需验证旧密码。<span class="tag tag-security">安全需求</span>
+</div>
+<div class="req">
+    <span class="req-id">REQ-SET-06</span>用户列表返回时密码字段置空。<span class="tag tag-security">安全需求</span>
+</div>
+
+<h3>3.10.2 界面原型</h3>
+<div class="screenshot">
+    <img src="screenshots/09-settings.png" alt="系统设置界面">
+    <div class="caption">图 3-9 系统设置 — 用户管理界面</div>
+</div>
+
+<!-- ==================== 4. 非功能需求 ==================== -->
+<h1 id="4">4. 非功能需求</h1>
+
+<h2>4.1 性能需求</h2>
+<table>
+    <tr><th>编号</th><th>需求描述</th><th>指标</th></tr>
+    <tr><td>NFR-PERF-01</td><td>API 平均响应时间</td><td>&lt; 500ms（常规查询）</td></tr>
+    <tr><td>NFR-PERF-02</td><td>并发挂号防超卖</td><td>原子操作保证零超卖</td></tr>
+    <tr><td>NFR-PERF-03</td><td>处方详情查询</td><td>批量查询药品信息，避免 N+1 问题</td></tr>
+</table>
+
+<h2>4.2 安全需求</h2>
+<table>
+    <tr><th>编号</th><th>需求描述</th></tr>
+    <tr><td>NFR-SEC-01</td><td>密码使用 BCrypt 加密存储，禁止明文</td></tr>
+    <tr><td>NFR-SEC-02</td><td>API 响应中密码字段必须置空</td></tr>
+    <tr><td>NFR-SEC-03</td><td>修改密码需验证旧密码，且只能改自己的</td></tr>
+    <tr><td>NFR-SEC-04</td><td>超级管理员 admin 不可删除</td></tr>
+    <tr><td>NFR-SEC-05</td><td>500 错误信息脱敏，不泄露堆栈细节</td></tr>
+    <tr><td>NFR-SEC-06</td><td>所有受保护接口必须通过 AuthInterceptor 认证</td></tr>
+    <tr><td>NFR-SEC-07</td><td>角色权限由 @RequireRole + AOP 切面强制执行</td></tr>
+</table>
+
+<h2>4.3 可靠性需求</h2>
+<table>
+    <tr><th>编号</th><th>需求描述</th></tr>
+    <tr><td>NFR-REL-01</td><td>挂号/处方/库存变更操作必须使用事务(@Transactional)，保证原子性</td></tr>
+    <tr><td>NFR-REL-02</td><td>库存扣减使用 WHERE stock >= qty 条件更新，防止超卖</td></tr>
+    <tr><td>NFR-REL-03</td><td>取消挂号时回增号源在事务内执行</td></tr>
+    <tr><td>NFR-REL-04</td><td>作废处方时逐条回滚库存在事务内执行</td></tr>
+    <tr><td>NFR-REL-05</td><td>全局异常处理器保证所有异常返回统一 JSON 格式</td></tr>
+</table>
+
+<h2>4.4 可维护性需求</h2>
+<table>
+    <tr><th>编号</th><th>需求描述</th></tr>
+    <tr><td>NFR-MAINT-01</td><td>代码采用 Controller → Service → Repository 三层分层架构</td></tr>
+    <tr><td>NFR-MAINT-02</td><td>关键业务流程代码包含 Javadoc 注释说明事务边界和状态流转</td></tr>
+    <tr><td>NFR-MAINT-03</td><td>VO 投影使用接口定义，原生 SQL 可直接映射</td></tr>
+    <tr><td>NFR-MAINT-04</td><td>请求体使用 DTO（如 PrescriptionCreateRequest）而非 Map，保证类型安全</td></tr>
+</table>
+
+<h2>4.5 兼容性需求</h2>
+<table>
+    <tr><th>编号</th><th>需求描述</th></tr>
+    <tr><td>NFR-COMP-01</td><td>支持 Chrome、Edge、Safari 最新版浏览器</td></tr>
+    <tr><td>NFR-COMP-02</td><td>前端开发服务器和后端 API 服务器支持 CORS 跨域</td></tr>
+    <tr><td>NFR-COMP-03</td><td>密码验证兼容明文和 BCrypt（迁移过渡期）</td></tr>
+</table>
+
+<!-- ==================== 5. 数据需求 ==================== -->
+<h1 id="5">5. 数据需求</h1>
+
+<h2>5.1 核心数据实体</h2>
+<table>
+    <tr><th>实体</th><th>核心字段</th><th>唯一性约束</th><th>关键关联</th></tr>
+    <tr><td>Department</td><td>id, name, location, phone</td><td>name 唯一</td><td>→ Doctor</td></tr>
+    <tr><td>Doctor</td><td>id, name, department_id, title, status</td><td>—</td><td>→ Department, → Schedule, → SysUser</td></tr>
+    <tr><td>Schedule</td><td>id, doctor_id, work_date, time_slot, total_slots, remain_slots</td><td>—</td><td>→ Doctor, → Registration</td></tr>
+    <tr><td>Patient</td><td>id, name, gender, id_card, birth_date, phone, address, allergy_info</td><td>id_card 唯一</td><td>→ Registration, → MedicalRecord, → Prescription</td></tr>
+    <tr><td>Registration</td><td>id, patient_id, schedule_id, doctor_id, seq_no, status, fee</td><td>—</td><td>→ Patient, → Schedule, → MedicalRecord</td></tr>
+    <tr><td>MedicalRecord</td><td>id, registration_id, patient_id, doctor_id, chief_complaint, present_illness, past_history, physical_exam, diagnosis, advice</td><td>registration_id 唯一</td><td>→ Registration, → Prescription</td></tr>
+    <tr><td>Medicine</td><td>id, name, spec, unit, price, stock, safety_stock, pinyin_code, manufacturer, status</td><td>name+spec 唯一</td><td>→ PrescriptionItem, → InventoryLog</td></tr>
+    <tr><td>Prescription</td><td>id, record_id, patient_id, doctor_id, total_amount, status</td><td>—</td><td>→ MedicalRecord, → PrescriptionItem</td></tr>
+    <tr><td>PrescriptionItem</td><td>id, prescription_id, medicine_id, quantity, dosage, usage_desc, unit_price, amount</td><td>—</td><td>→ Prescription, → Medicine</td></tr>
+    <tr><td>InventoryLog</td><td>id, medicine_id, type, quantity, batch_no, expiry_date, operator, remark</td><td>—</td><td>→ Medicine</td></tr>
+    <tr><td>SysUser</td><td>id, username, password, real_name, role, status, doctor_id</td><td>username 唯一</td><td>→ Doctor</td></tr>
+</table>
+
+<h2>5.2 数据状态码枚举</h2>
+<table>
+    <tr><th>实体</th><th>状态字段</th><th>值</th><th>含义</th></tr>
+    <tr><td rowspan="4">Registration</td><td rowspan="4">status</td><td>0</td><td>候诊</td></tr>
+    <tr><td>1</td><td>就诊中</td></tr>
+    <tr><td>2</td><td>已完成</td></tr>
+    <tr><td>3</td><td>已取消</td></tr>
+    <tr><td rowspan="4">Prescription</td><td rowspan="4">status</td><td>0</td><td>待缴费</td></tr>
+    <tr><td>1</td><td>已缴费</td></tr>
+    <tr><td>2</td><td>已取药</td></tr>
+    <tr><td>3</td><td>已作废</td></tr>
+    <tr><td rowspan="2">InventoryLog</td><td rowspan="2">type</td><td>in</td><td>入库</td></tr>
+    <tr><td>out</td><td>出库</td></tr>
+    <tr><td>SysUser</td><td>role</td><td>admin / doctor / pharmacist</td><td>管理员 / 医生 / 药师</td></tr>
+</table>
+
+<!-- ==================== 6. 接口需求 ==================== -->
+<h1 id="6">6. 接口需求</h1>
+
+<h2>6.1 外部接口</h2>
+<table>
+    <tr><th>接口类型</th><th>协议</th><th>说明</th></tr>
+    <tr><td>前端 ↔ 后端</td><td>HTTP REST (JSON)</td><td>前后端通过 RESTful API 交互，前端 Vite 开发服务器代理 /api 到后端 8080</td></tr>
+    <tr><td>后端 ↔ 数据库</td><td>MySQL JDBC</td><td>Spring Data JPA 管理数据库连接，HikariCP 连接池</td></tr>
+</table>
+
+<h2>6.2 API 统一响应格式</h2>
+<table>
+    <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+    <tr><td>code</td><td>int</td><td>200=成功，400=业务错误，401=未登录，403=禁止，409=冲突，500=服务器错误</td></tr>
+    <tr><td>message</td><td>String</td><td>提示信息</td></tr>
+    <tr><td>data</td><td>T</td><td>业务数据，失败时为 null</td></tr>
+</table>
+
+<h2>6.3 异常处理策略</h2>
+<table>
+    <tr><th>异常类型</th><th>HTTP 状态码</th><th>code</th><th>说明</th></tr>
+    <tr><td>BusinessException</td><td>400</td><td>400</td><td>业务逻辑校验失败</td></tr>
+    <tr><td>MethodArgumentNotValidException</td><td>400</td><td>400</td><td>@Valid 校验失败，拼接所有字段错误</td></tr>
+    <tr><td>HttpMessageNotReadableException</td><td>400</td><td>400</td><td>请求体格式错误</td></tr>
+    <tr><td>MissingServletRequestParameterException</td><td>400</td><td>400</td><td>缺少必要参数</td></tr>
+    <tr><td>MethodArgumentTypeMismatchException</td><td>400</td><td>400</td><td>参数类型错误</td></tr>
+    <tr><td>DataIntegrityViolationException</td><td>409</td><td>409</td><td>数据约束冲突（唯一键/外键）</td></tr>
+    <tr><td>OptimisticLockException</td><td>409</td><td>409</td><td>乐观锁冲突</td></tr>
+    <tr><td>Exception</td><td>500</td><td>500</td><td>兜底异常，信息脱敏仅记录日志</td></tr>
+</table>
+
+<h2>6.4 API 模块清单</h2>
+<table>
+    <tr><th>模块</th><th>基础路径</th><th>接口数</th><th>主要操作</th></tr>
+    <tr><td>认证</td><td>/api/auth</td><td>3</td><td>login / logout / current</td></tr>
+    <tr><td>仪表盘</td><td>/api/dashboard</td><td>1</td><td>stats</td></tr>
+    <tr><td>患者</td><td>/api/patients</td><td>6</td><td>CRUD + search + page</td></tr>
+    <tr><td>科室</td><td>/api/departments</td><td>5</td><td>CRUD</td></tr>
+    <tr><td>医生</td><td>/api/doctors</td><td>5</td><td>CRUD + list with deptName</td></tr>
+    <tr><td>排班</td><td>/api/schedules</td><td>6</td><td>CRUD + available</td></tr>
+    <tr><td>挂号</td><td>/api/registrations</td><td>5</td><td>list / register / call / complete / cancel</td></tr>
+    <tr><td>病历</td><td>/api/medical-records</td><td>5</td><td>list / detail / byRegistration / create / update</td></tr>
+    <tr><td>药品</td><td>/api/medicines</td><td>8</td><td>CRUD + search + lowStock + stockIn + stockOut</td></tr>
+    <tr><td>处方</td><td>/api/prescriptions</td><td>6</td><td>list / detail / byRecord / create / dispense / cancel + inventoryLogs</td></tr>
+    <tr><td>用户</td><td>/api/users</td><td>5</td><td>CRUD + changePassword</td></tr>
+</table>
+<p style="margin-top:8px;font-size:13px;color:#888;">详细 API 文档请参见 <a href="api.html">api.html</a></p>
+
+</div>
+</body>
+</html>

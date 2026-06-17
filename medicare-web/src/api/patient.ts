@@ -1,8 +1,8 @@
 import request from './index'
-import type { Result, Patient, PageResult } from '../types'
+import type { Result, Patient } from '../types'
 
-export function listPatients(page = 1, size = 20) {
-  return request.get<any, Result<PageResult<Patient>>>('/patients', { params: { page, size } })
+export function listPatients() {
+  return request.get<any, Result<Patient[]>>('/patients')
 }
 
 export function searchPatients(keyword: string) {

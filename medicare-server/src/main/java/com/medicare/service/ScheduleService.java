@@ -11,6 +11,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 排班服务 — 排班 CRUD + 可用号源查询
+ * <p>
+ * 创建排班时自动将 remainSlots 设为 totalSlots；
+ * 挂号时通过 ScheduleRepository.decrementRemain() 原子扣减号源
+ */
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {

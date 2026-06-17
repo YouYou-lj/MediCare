@@ -5,13 +5,6 @@ export interface Result<T> {
   data: T
 }
 
-export interface PageResult<T> {
-  list: T[]
-  total: number
-  page: number
-  size: number
-}
-
 // ========== 用户与认证 ==========
 export interface SysUser {
   id: number

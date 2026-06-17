@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCare API 文档</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif; color: #333; background: #f5f7fa; line-height: 1.6; }
+        .sidebar { position: fixed; left: 0; top: 0; width: 260px; height: 100vh; background: #1a1a2e; color: #fff; overflow-y: auto; padding: 20px 0; z-index: 100; }
+        .sidebar h2 { padding: 10px 24px; font-size: 18px; color: #e94560; border-bottom: 1px solid #333; }
+        .sidebar a { display: block; padding: 8px 24px 8px 32px; color: #bbb; text-decoration: none; font-size: 13px; transition: all .2s; }
+        .sidebar a:hover { color: #fff; background: rgba(233,69,96,.15); }
+        .sidebar .group { padding: 8px 24px; font-size: 12px; color: #e94560; text-transform: uppercase; font-weight: 700; margin-top: 12px; }
+        .main { margin-left: 260px; max-width: 960px; padding: 30px 40px; }
+        .endpoint { background: #fff; border-radius: 8px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); overflow: hidden; }
+        .endpoint-header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #eee; }
+        .method { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 4px; color: #fff; letter-spacing: .5px; min-width: 60px; text-align: center; }
+        .method-get { background: #61affe; }
+        .method-post { background: #49cc90; }
+        .method-put { background: #fca130; }
+        .method-delete { background: #f93e3e; }
+        .path { font-family: "SF Mono", "Fira Code", monospace; font-size: 14px; font-weight: 600; color: #333; }
+        .desc { margin-left: auto; font-size: 13px; color: #888; }
+        .endpoint-body { padding: 16px 20px; }
+        .endpoint-body h4 { font-size: 13px; color: #666; margin: 12px 0 6px; text-transform: uppercase; }
+        .endpoint-body h4:first-child { margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }
+        th { text-align: left; padding: 6px 10px; background: #f8f9fb; color: #666; font-weight: 600; border-bottom: 1px solid #eee; }
+        td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; }
+        code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; }
+        .tag { display: inline-block; font-size: 11px; padding: 2px 6px; border-radius: 3px; margin-right: 4px; }
+        .tag-required { background: #ffe0e0; color: #c00; }
+        .tag-optional { background: #e0f0ff; color: #06c; }
+        .tag-role { background: #fff3cd; color: #856404; }
+        .example { background: #1e1e2e; color: #cdd6f4; padding: 12px 16px; border-radius: 6px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; overflow-x: auto; white-space: pre; margin-top: 8px; }
+        .example .key { color: #89b4fa; }
+        .example .str { color: #a6e3a1; }
+        .example .num { color: #fab387; }
+        .flow-box { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+        .flow-box h3 { margin-bottom: 12px; color: #1a1a2e; }
+        .flow-box .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0; }
+        .flow-box .step { background: #e94560; color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+        .flow-box .arrow { color: #ccc; font-size: 18px; }
+        .status-table td:first-child { font-family: "SF Mono", monospace; font-weight: 600; }
+        h1 { color: #1a1a2e; margin-bottom: 8px; }
+        .subtitle { color: #888; font-size: 14px; margin-bottom: 30px; }
+        .section-title { font-size: 22px; color: #1a1a2e; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #e94560; }
+    </style>
+</head>
+<body>
+
+<nav class="sidebar">
+    <h2>MediCare API</h2>
+    <div class="group">业务流程</div>
+    <a href="#flow-auth">认证流程</a>
+    <a href="#flow-reg">挂号就诊流程</a>
+    <a href="#flow-rx">处方发药流程</a>
+    <a href="#flow-stock">库存管理流程</a>
+    <div class="group">接口列表</div>
+    <a href="#auth">认证 Auth</a>
+    <a href="#dashboard">仪表盘 Dashboard</a>
+    <a href="#patients">患者 Patients</a>
+    <a href="#departments">科室 Departments</a>
+    <a href="#doctors">医生 Doctors</a>
+    <a href="#schedules">排班 Schedules</a>
+    <a href="#registrations">挂号 Registrations</a>
+    <a href="#medical-records">病历 Medical Records</a>
+    <a href="#medicines">药品 Medicines</a>
+    <a href="#prescriptions">处方 Prescriptions</a>
+    <a href="#users">用户 Users</a>
+    <div class="group">附录</div>
+    <a href="#result-format">统一响应格式</a>
+    <a href="#error-codes">错误码说明</a>
+    <a href="#status-codes">状态码枚举</a>
+</nav>
+
+<div class="main">
+
+<h1>MediCare API 文档</h1>
+<p class="subtitle">Base URL: http://localhost:8080 &nbsp;|&nbsp; 认证方式: Session Cookie &nbsp;|&nbsp; 版本: v1.0</p>
+
+<!-- ==================== 业务流程 ==================== -->
+<h2 class="section-title" id="flow-auth">认证流程</h2>
+<div class="flow-box">
+    <h3>登录 → 鉴权 → 角色校验</h3>
+    <div class="flow">
+        <span class="step">POST /api/auth/login</span>
+        <span class="arrow">→</span>
+        <span class="step">Session 写入用户</span>
+        <span class="arrow">→</span>
+        <span class="step">后续请求携带 Cookie</span>
+        <span class="arrow">→</span>
+        <span class="step">AuthInterceptor 校验</span>
+        <span class="arrow">→</span>
+        <span class="step">@RequireRole 角色校验</span>
+    </div>
+    <p style="margin-top:10px;font-size:13px;color:#888;">
+        前端需设置 <code>withCredentials: true</code> 以携带 Cookie；<br>
+        未登录返回 <code>401</code>，权限不足返回 <code>400</code>（BusinessException）。
+    </p>
+</div>
+
+<h2 class="section-title" id="flow-reg">挂号就诊流程</h2>
+<div class="flow-box">
+    <h3>排班 → 挂号 → 叫号 → 写病历 → 开处方 → 完成就诊</h3>
+    <div class="flow">
+        <span class="step">创建排班</span>
+        <span class="arrow">→</span>
+        <span class="step">POST /registrations</span>
+        <span class="arrow">→</span>
+        <span class="step">PUT /{id}/call</span>
+        <span class="arrow">→</span>
+        <span class="step">POST /medical-records</span>
+        <span class="arrow">→</span>
+        <span class="step">POST /prescriptions</span>
+        <span class="arrow">→</span>
+        <span class="step">PUT /{id}/complete</span>
+    </div>
+</div>
+
+<h2 class="section-title" id="flow-rx">处方发药流程</h2>
+<div class="flow-box">
+    <h3>开处方(自动扣库存) → 取药 或 作废(回滚库存)</h3>
+    <div class="flow">
+        <span class="step">POST /prescriptions</span>
+        <span class="arrow">→</span>
+        <span class="step">PUT /{id}/dispense</span>
+        <span style="font-size:13px;color:#888;margin:0 8px;">或</span>
+        <span class="step">PUT /{id}/cancel</span>
+    </div>
+</div>
+
+<h2 class="section-title" id="flow-stock">库存管理流程</h2>
+<div class="flow-box">
+    <h3>入库(增加库存+日志) / 出库(安全扣减+日志)</h3>
+    <div class="flow">
+        <span class="step">POST /{id}/stock-in</span>
+        <span style="font-size:13px;color:#888;margin:0 8px;">|</span>
+        <span class="step">POST /{id}/stock-out</span>
+        <span style="font-size:13px;color:#888;margin:0 8px;">|</span>
+        <span class="step">GET /low-stock</span>
+    </div>
+</div>
+
+<!-- ==================== 认证 ==================== -->
+<h2 class="section-title" id="auth">认证 Auth</h2>
+
+<div class="endpoint" id="auth-login">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/auth/login</span>
+        <span class="desc">登录</span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>username</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>用户名</td></tr>
+            <tr><td>password</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>密码（明文，兼容 BCrypt）</td></tr>
+        </table>
+        <h4>响应</h4>
+        <div class="example">{
+  "<span class="key">code</span>": <span class="num">200</span>,
+  "<span class="key">message</span>": "<span class="str">success</span>",
+  "<span class="key">data</span>": {
+    "<span class="key">id</span>": <span class="num">1</span>,
+    "<span class="key">username</span>": "<span class="str">admin</span>",
+    "<span class="key">realName</span>": "<span class="str">管理员</span>",
+    "<span class="key">role</span>": "<span class="str">admin</span>",
+    "<span class="key">status</span>": <span class="num">1</span>,
+    "<span class="key">doctorId</span>": <span class="num">null</span>,
+    "<span class="key">password</span>": <span class="num">null</span>
+  }
+}</div>
+    </div>
+</div>
+
+<div class="endpoint" id="auth-logout">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/auth/logout</span>
+        <span class="desc">登出</span>
+    </div>
+    <div class="endpoint-body">
+        <h4>说明</h4>
+        <p>销毁 Session，无需请求体。</p>
+    </div>
+</div>
+
+<div class="endpoint" id="auth-current">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/auth/current</span>
+        <span class="desc">获取当前登录用户</span>
+    </div>
+    <div class="endpoint-body">
+        <h4>说明</h4>
+        <p>前端刷新页面后调用此接口恢复登录态，未登录时 <code>data</code> 为 <code>null</code>。</p>
+    </div>
+</div>
+
+<!-- ==================== 仪表盘 ==================== -->
+<h2 class="section-title" id="dashboard">仪表盘 Dashboard</h2>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/dashboard/stats</span>
+        <span class="desc">首页统计数据</span>
+    </div>
+    <div class="endpoint-body">
+        <h4>响应字段</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td>todayRegCount</td><td>long</td><td>今日挂号数</td></tr>
+            <tr><td>waitingCount</td><td>long</td><td>当前候诊人数</td></tr>
+            <tr><td>stockAlertCount</td><td>long</td><td>库存预警药品数</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- ==================== 患者 ==================== -->
+<h2 class="section-title" id="patients">患者 Patients</h2>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/patients</span>
+        <span class="desc">分页查询患者 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>查询参数</h4>
+        <table>
+            <tr><th>参数</th><th>类型</th><th>必填</th><th>默认值</th><th>说明</th></tr>
+            <tr><td>page</td><td>int</td><td><span class="tag tag-optional">可选</span></td><td>1</td><td>页码（从1开始）</td></tr>
+            <tr><td>size</td><td>int</td><td><span class="tag tag-optional">可选</span></td><td>20</td><td>每页条数</td></tr>
+        </table>
+        <h4>响应 — PageResult&lt;Patient&gt;</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td>list</td><td>Patient[]</td><td>患者列表</td></tr>
+            <tr><td>total</td><td>long</td><td>总条数</td></tr>
+            <tr><td>page</td><td>int</td><td>当前页码</td></tr>
+            <tr><td>size</td><td>int</td><td>每页条数</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/patients/search</span>
+        <span class="desc">模糊搜索患者 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>查询参数</h4>
+        <table>
+            <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>keyword</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>关键词（匹配姓名/身份证/手机号）</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/patients/{id}</span>
+        <span class="desc">患者详情 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/patients</span>
+        <span class="desc">创建患者 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体 — Patient</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>name</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>姓名</td></tr>
+            <tr><td>gender</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>性别</td></tr>
+            <tr><td>idCard</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>身份证号（唯一）</td></tr>
+            <tr><td>birthDate</td><td>LocalDate</td><td><span class="tag tag-optional">可选</span></td><td>出生日期</td></tr>
+            <tr><td>phone</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>手机号</td></tr>
+            <tr><td>address</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>地址</td></tr>
+            <tr><td>allergyInfo</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>过敏信息</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/patients/{id}</span>
+        <span class="desc">更新患者 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <p>请求体同创建，身份证号唯一性校验排除自身。</p>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-delete">DELETE</span>
+        <span class="path">/api/patients/{id}</span>
+        <span class="desc">删除患者 <span class="tag tag-role">admin</span></span>
+    </div>
+</div>
+
+<!-- ==================== 科室 ==================== -->
+<h2 class="section-title" id="departments">科室 Departments</h2>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/departments</span>
+        <span class="desc">科室列表 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/departments/{id}</span>
+        <span class="desc">科室详情 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/departments</span>
+        <span class="desc">创建科室 <span class="tag tag-role">admin</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体 — Department</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>name</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>科室名称（唯一）</td></tr>
+            <tr><td>location</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>位置</td></tr>
+            <tr><td>phone</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>电话</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/departments/{id}</span>
+        <span class="desc">更新科室 <span class="tag tag-role">admin</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-delete">DELETE</span>
+        <span class="path">/api/departments/{id}</span>
+        <span class="desc">删除科室 <span class="tag tag-role">admin</span></span>
+    </div>
+</div>
+
+<!-- ==================== 医生 ==================== -->
+<h2 class="section-title" id="doctors">医生 Doctors</h2>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/doctors</span>
+        <span class="desc">医生列表(含科室名) <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>查询参数</h4>
+        <table>
+            <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>deptId</td><td>Long</td><td><span class="tag tag-optional">可选</span></td><td>按科室ID筛选</td></tr>
+        </table>
+        <h4>响应 — DoctorVO 字段</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td>id</td><td>Long</td><td>医生ID</td></tr>
+            <tr><td>name</td><td>String</td><td>姓名</td></tr>
+            <tr><td>departmentId</td><td>Long</td><td>科室ID</td></tr>
+            <tr><td>title</td><td>String</td><td>职称</td></tr>
+            <tr><td>status</td><td>Integer</td><td>状态(1=在职)</td></tr>
+            <tr><td>createTime</td><td>LocalDateTime</td><td>创建时间</td></tr>
+            <tr><td>departmentName</td><td>String</td><td>科室名称（关联查询）</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/doctors/{id}</span>
+        <span class="desc">医生详情 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/doctors</span>
+        <span class="desc">创建医生 <span class="tag tag-role">admin</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体 — Doctor</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>name</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>姓名</td></tr>
+            <tr><td>departmentId</td><td>Long</td><td><span class="tag tag-required">必填</span></td><td>科室ID（需存在）</td></tr>
+            <tr><td>title</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>职称</td></tr>
+            <tr><td>status</td><td>Integer</td><td><span class="tag tag-optional">可选</span></td><td>状态(1=在职)</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/doctors/{id}</span>
+        <span class="desc">更新医生 <span class="tag tag-role">admin</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-delete">DELETE</span>
+        <span class="path">/api/doctors/{id}</span>
+        <span class="desc">删除医生 <span class="tag tag-role">admin</span></span>
+    </div>
+</div>
+
+<!-- ==================== 排班 ==================== -->
+<h2 class="section-title" id="schedules">排班 Schedules</h2>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/schedules</span>
+        <span class="desc">排班列表 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>查询参数</h4>
+        <table>
+            <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>date</td><td>LocalDate</td><td><span class="tag tag-optional">可选</span></td><td>日期（yyyy-MM-dd）</td></tr>
+            <tr><td>deptId</td><td>Long</td><td><span class="tag tag-optional">可选</span></td><td>科室ID</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/schedules/available</span>
+        <span class="desc">可用号源 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <p>仅返回剩余号源 &gt; 0 的排班，供挂号选择。</p>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/schedules/{id}</span>
+        <span class="desc">排班详情 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/schedules</span>
+        <span class="desc">创建排班 <span class="tag tag-role">admin</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体 — Schedule</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>doctorId</td><td>Long</td><td><span class="tag tag-required">必填</span></td><td>医生ID</td></tr>
+            <tr><td>workDate</td><td>LocalDate</td><td><span class="tag tag-required">必填</span></td><td>出诊日期</td></tr>
+            <tr><td>timeSlot</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>时段（上午/下午/晚上）</td></tr>
+            <tr><td>totalSlots</td><td>Integer</td><td><span class="tag tag-required">必填</span></td><td>总号源数</td></tr>
+        </table>
+        <p style="font-size:13px;color:#888;">remainSlots 自动设为 totalSlots，无需传入。</p>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/schedules/{id}</span>
+        <span class="desc">更新排班 <span class="tag tag-role">admin</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-delete">DELETE</span>
+        <span class="path">/api/schedules/{id}</span>
+        <span class="desc">删除排班 <span class="tag tag-role">admin</span></span>
+    </div>
+</div>
+
+<!-- ==================== 挂号 ==================== -->
+<h2 class="section-title" id="registrations">挂号 Registrations</h2>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/registrations</span>
+        <span class="desc">挂号列表 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>查询参数</h4>
+        <table>
+            <tr><th>参数</th><th>类型</th><th>必填</th><th>默认值</th><th>说明</th></tr>
+            <tr><td>date</td><td>LocalDate</td><td><span class="tag tag-optional">可选</span></td><td>今天</td><td>日期筛选</td></tr>
+            <tr><td>status</td><td>Integer</td><td><span class="tag tag-optional">可选</span></td><td>全部</td><td>0=候诊 1=就诊中 2=已完成 3=已取消</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/registrations</span>
+        <span class="desc">挂号 <span class="tag tag-role">admin</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体</h4>
+        <div class="example">{
+  "<span class="key">patientId</span>": <span class="num">1</span>,
+  "<span class="key">scheduleId</span>": <span class="num">3</span>
+}</div>
+        <p style="font-size:13px;color:#888;margin-top:8px;">事务操作：原子扣减号源(WHERE remain_slots > 0) + 保存挂号记录 + 从 schedule 复制 doctorId</p>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/registrations/{id}/call</span>
+        <span class="desc">叫号 (状态 0→1) <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/registrations/{id}/complete</span>
+        <span class="desc">完成就诊 (状态 1→2) <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-delete">DELETE</span>
+        <span class="path">/api/registrations/{id}</span>
+        <span class="desc">取消挂号 (状态→3 + 回增号源) <span class="tag tag-role">admin</span></span>
+    </div>
+</div>
+
+<!-- ==================== 病历 ==================== -->
+<h2 class="section-title" id="medical-records">病历 Medical Records</h2>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/medical-records</span>
+        <span class="desc">病历列表 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>查询参数</h4>
+        <table>
+            <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>patientId</td><td>Long</td><td><span class="tag tag-optional">可选</span></td><td>按患者ID筛选</td></tr>
+            <tr><td>registrationId</td><td>Long</td><td><span class="tag tag-optional">可选</span></td><td>按挂号ID筛选</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/medical-records/{id}</span>
+        <span class="desc">病历详情 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/medical-records/by-registration/{registrationId}</span>
+        <span class="desc">按挂号查病历 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/medical-records</span>
+        <span class="desc">创建病历 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体 — MedicalRecord</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>registrationId</td><td>Long</td><td><span class="tag tag-required">必填</span></td><td>挂号ID（唯一，不能重复创建）</td></tr>
+            <tr><td>patientId</td><td>Long</td><td><span class="tag tag-required">必填</span></td><td>患者ID</td></tr>
+            <tr><td>doctorId</td><td>Long</td><td><span class="tag tag-required">必填</span></td><td>医生ID</td></tr>
+            <tr><td>chiefComplaint</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>主诉</td></tr>
+            <tr><td>presentIllness</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>现病史</td></tr>
+            <tr><td>pastHistory</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>既往史</td></tr>
+            <tr><td>physicalExam</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>体格检查</td></tr>
+            <tr><td>diagnosis</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>诊断</td></tr>
+            <tr><td>advice</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>医嘱</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/medical-records/{id}</span>
+        <span class="desc">更新病历 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <p>仅更新医学字段（主诉/现病史/既往史/体格检查/诊断/医嘱）。</p>
+    </div>
+</div>
+
+<!-- ==================== 药品 ==================== -->
+<h2 class="section-title" id="medicines">药品 Medicines</h2>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/medicines</span>
+        <span class="desc">药品列表 <span class="tag tag-role">admin/doctor/pharmacist</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>查询参数</h4>
+        <table>
+            <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>keyword</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>关键词搜索（名称/拼音码/厂家）</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/medicines/low-stock</span>
+        <span class="desc">库存预警 <span class="tag tag-role">admin/pharmacist</span></span>
+    </div>
+    <div class="endpoint-body">
+        <p>返回库存低于安全存量的药品。</p>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/medicines/{id}</span>
+        <span class="desc">药品详情 <span class="tag tag-role">admin/doctor/pharmacist</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/medicines</span>
+        <span class="desc">创建药品 <span class="tag tag-role">admin/pharmacist</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体 — Medicine</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>name</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>药品名称</td></tr>
+            <tr><td>spec</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>规格（名称+规格唯一）</td></tr>
+            <tr><td>unit</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>单位</td></tr>
+            <tr><td>price</td><td>BigDecimal</td><td><span class="tag tag-optional">可选</span></td><td>单价</td></tr>
+            <tr><td>stock</td><td>Integer</td><td><span class="tag tag-optional">可选</span></td><td>库存</td></tr>
+            <tr><td>safetyStock</td><td>Integer</td><td><span class="tag tag-optional">可选</span></td><td>安全库存</td></tr>
+            <tr><td>pinyinCode</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>拼音码</td></tr>
+            <tr><td>manufacturer</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>生产厂家</td></tr>
+            <tr><td>status</td><td>Integer</td><td><span class="tag tag-optional">可选</span></td><td>状态(1=启用)</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/medicines/{id}</span>
+        <span class="desc">更新药品 <span class="tag tag-role">admin/pharmacist</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-delete">DELETE</span>
+        <span class="path">/api/medicines/{id}</span>
+        <span class="desc">删除药品 <span class="tag tag-role">admin</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/medicines/{id}/stock-in</span>
+        <span class="desc">入库 <span class="tag tag-role">admin/pharmacist</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体 — StockRequest</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>quantity</td><td>Integer</td><td><span class="tag tag-required">必填</span></td><td>数量（≥1）</td></tr>
+            <tr><td>batchNo</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>批次号</td></tr>
+            <tr><td>expiryDate</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>有效期（yyyy-MM-dd）</td></tr>
+            <tr><td>operator</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>操作人</td></tr>
+            <tr><td>remark</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>备注</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/medicines/{id}/stock-out</span>
+        <span class="desc">出库 <span class="tag tag-role">admin/pharmacist</span></span>
+    </div>
+    <div class="endpoint-body">
+        <p>请求体同入库。安全扣减：库存不足时返回 400 错误。</p>
+    </div>
+</div>
+
+<!-- ==================== 处方 ==================== -->
+<h2 class="section-title" id="prescriptions">处方 Prescriptions</h2>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/prescriptions</span>
+        <span class="desc">处方列表 <span class="tag tag-role">admin/doctor/pharmacist</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>查询参数</h4>
+        <table>
+            <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>patientId</td><td>Long</td><td><span class="tag tag-optional">可选</span></td><td>按患者ID筛选</td></tr>
+            <tr><td>today</td><td>Boolean</td><td><span class="tag tag-optional">可选</span></td><td>仅查询今天的处方</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/prescriptions/{id}</span>
+        <span class="desc">处方详情(含明细) <span class="tag tag-role">admin/doctor/pharmacist</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>响应 — PrescriptionVO</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td>id</td><td>Long</td><td>处方ID</td></tr>
+            <tr><td>recordId</td><td>Long</td><td>病历ID</td></tr>
+            <tr><td>patientId</td><td>Long</td><td>患者ID</td></tr>
+            <tr><td>doctorId</td><td>Long</td><td>医生ID</td></tr>
+            <tr><td>totalAmount</td><td>BigDecimal</td><td>总金额</td></tr>
+            <tr><td>status</td><td>Integer</td><td>0=待缴费 1=已缴费 2=已取药 3=已作废</td></tr>
+            <tr><td>patientName</td><td>String</td><td>患者姓名</td></tr>
+            <tr><td>doctorName</td><td>String</td><td>医生姓名</td></tr>
+            <tr><td>items</td><td>PrescriptionItemVO[]</td><td>明细列表</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/prescriptions/by-record/{recordId}</span>
+        <span class="desc">按病历查处方 <span class="tag tag-role">admin/doctor/pharmacist</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/prescriptions</span>
+        <span class="desc">开立处方 <span class="tag tag-role">admin/doctor</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体 — PrescriptionCreateRequest</h4>
+        <div class="example">{
+  "<span class="key">prescription</span>": {
+    "<span class="key">recordId</span>": <span class="num">1</span>,
+    "<span class="key">patientId</span>": <span class="num">1</span>,
+    "<span class="key">doctorId</span>": <span class="num">1</span>
+  },
+  "<span class="key">items</span>": [
+    {
+      "<span class="key">medicineId</span>": <span class="num">1</span>,
+      "<span class="key">quantity</span>": <span class="num">3</span>,
+      "<span class="key">dosage</span>": "<span class="str">每次1片</span>",
+      "<span class="key">usageDesc</span>": "<span class="str">一日3次</span>",
+      "<span class="key">unitPrice</span>": <span class="num">12.50</span>
+    }
+  ]
+}</div>
+        <p style="font-size:13px;color:#888;margin-top:8px;">事务操作：保存处方 + 逐条 safeDecrementStock 扣减库存 + 记录库存日志 + 保存明细</p>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/prescriptions/{id}/dispense</span>
+        <span class="desc">取药 <span class="tag tag-role">admin/pharmacist</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/prescriptions/{id}/cancel</span>
+        <span class="desc">作废处方 <span class="tag tag-role">admin/pharmacist</span></span>
+    </div>
+    <div class="endpoint-body">
+        <p>事务操作：逐条回滚库存 + 记录库存日志 + 更新处方状态。已取药处方不能作废。</p>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/prescriptions/inventory-logs</span>
+        <span class="desc">库存变动日志 <span class="tag tag-role">admin/pharmacist</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>查询参数</h4>
+        <table>
+            <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>medicineId</td><td>Long</td><td><span class="tag tag-optional">可选</span></td><td>按药品ID筛选</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- ==================== 用户 ==================== -->
+<h2 class="section-title" id="users">用户 Users</h2>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/users</span>
+        <span class="desc">用户列表 <span class="tag tag-role">admin</span></span>
+    </div>
+    <div class="endpoint-body">
+        <p>返回所有用户，密码字段置空。</p>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/users</span>
+        <span class="desc">创建用户 <span class="tag tag-role">admin</span></span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体 — SysUser</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>username</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>用户名（唯一）</td></tr>
+            <tr><td>password</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>密码（BCrypt 加密存储）</td></tr>
+            <tr><td>realName</td><td>String</td><td><span class="tag tag-optional">可选</span></td><td>真实姓名</td></tr>
+            <tr><td>role</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>角色: admin / doctor / pharmacist</td></tr>
+            <tr><td>status</td><td>Integer</td><td><span class="tag tag-optional">可选</span></td><td>状态(1=启用)</td></tr>
+            <tr><td>doctorId</td><td>Long</td><td><span class="tag tag-optional">可选</span></td><td>关联医生ID</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/users/{id}</span>
+        <span class="desc">更新用户 <span class="tag tag-role">admin</span></span>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-delete">DELETE</span>
+        <span class="path">/api/users/{id}</span>
+        <span class="desc">删除用户 <span class="tag tag-role">admin</span></span>
+    </div>
+    <div class="endpoint-body">
+        <p>超级管理员 admin 账号禁止删除。</p>
+    </div>
+</div>
+
+<div class="endpoint">
+    <div class="endpoint-header">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/users/{id}/password</span>
+        <span class="desc">修改密码</span>
+    </div>
+    <div class="endpoint-body">
+        <h4>请求体 — ChangePasswordRequest</h4>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>oldPassword</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>旧密码</td></tr>
+            <tr><td>newPassword</td><td>String</td><td><span class="tag tag-required">必填</span></td><td>新密码</td></tr>
+        </table>
+        <p style="font-size:13px;color:#c00;">只能修改自己的密码，验证旧密码正确后才允许修改。</p>
+    </div>
+</div>
+
+<!-- ==================== 附录 ==================== -->
+<h2 class="section-title" id="result-format">统一响应格式</h2>
+<div class="flow-box">
+    <h3>Result&lt;T&gt;</h3>
+    <div class="example">{
+  "<span class="key">code</span>": <span class="num">200</span>,
+  "<span class="key">message</span>": "<span class="str">success</span>",
+  "<span class="key">data</span>": { ... }
+}</div>
+    <table style="margin-top:16px;">
+        <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+        <tr><td>code</td><td>int</td><td>状态码：200=成功，400=业务错误，401=未登录，403=禁止，409=冲突，500=服务器错误</td></tr>
+        <tr><td>message</td><td>String</td><td>提示信息</td></tr>
+        <tr><td>data</td><td>T</td><td>业务数据，失败时为 null</td></tr>
+    </table>
+</div>
+
+<h2 class="section-title" id="error-codes">错误码说明</h2>
+<div class="flow-box">
+    <table>
+        <tr><th>HTTP 状态码</th><th>code</th><th>说明</th></tr>
+        <tr><td>200</td><td>200</td><td>请求成功</td></tr>
+        <tr><td>400</td><td>400</td><td>业务异常 / 参数校验失败 / 请求体格式错误</td></tr>
+        <tr><td>401</td><td>401</td><td>未登录（AuthInterceptor 拦截）</td></tr>
+        <tr><td>403</td><td>403</td><td>禁止操作（如修改他人密码）</td></tr>
+        <tr><td>409</td><td>409</td><td>数据约束冲突 / 乐观锁冲突</td></tr>
+        <tr><td>500</td><td>500</td><td>服务器内部错误（信息脱敏）</td></tr>
+    </table>
+</div>
+
+<h2 class="section-title" id="status-codes">状态码枚举</h2>
+<div class="flow-box">
+    <h3>挂号状态</h3>
+    <table class="status-table">
+        <tr><th>值</th><th>含义</th></tr>
+        <tr><td>0</td><td>候诊</td></tr>
+        <tr><td>1</td><td>就诊中</td></tr>
+        <tr><td>2</td><td>已完成</td></tr>
+        <tr><td>3</td><td>已取消</td></tr>
+    </table>
+    <h3 style="margin-top:16px;">处方状态</h3>
+    <table class="status-table">
+        <tr><th>值</th><th>含义</th></tr>
+        <tr><td>0</td><td>待缴费</td></tr>
+        <tr><td>1</td><td>已缴费</td></tr>
+        <tr><td>2</td><td>已取药</td></tr>
+        <tr><td>3</td><td>已作废</td></tr>
+    </table>
+    <h3 style="margin-top:16px;">用户角色</h3>
+    <table class="status-table">
+        <tr><th>值</th><th>含义</th></tr>
+        <tr><td>admin</td><td>管理员</td></tr>
+        <tr><td>doctor</td><td>医生</td></tr>
+        <tr><td>pharmacist</td><td>药师</td></tr>
+    </table>
+    <h3 style="margin-top:16px;">库存日志类型</h3>
+    <table class="status-table">
+        <tr><th>值</th><th>含义</th></tr>
+        <tr><td>in</td><td>入库</td></tr>
+        <tr><td>out</td><td>出库</td></tr>
+    </table>
+</div>
+
+</div>
+</body>
+</html>

@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 医生控制器 — 医生 CRUD + 按科室筛选
+ * <p>
+ * 医生隶属于科室，创建时校验科室是否存在；列表查询返回 DoctorVO（含科室名称）
+ */
 @RestController
 @RequestMapping("/api/doctors")
 @RequiredArgsConstructor
@@ -18,6 +23,7 @@ public class DoctorController {
 
     private final DoctorService doctorService;
 
+    /** 医生列表 — 可按科室ID筛选，返回含科室名的 VO */
     @GetMapping
     @RequireRole({"admin", "doctor"})
     public Result<List<DoctorVO>> list(@RequestParam(required = false) Long deptId) {

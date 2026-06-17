@@ -78,7 +78,7 @@ const rules = {
 async function loadData() {
   try {
     const res = await listPatients()
-    tableData.value = res.data.list || res.data as any
+    tableData.value = res.data
   } catch {}
 }
 

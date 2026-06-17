@@ -15,7 +15,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.util.Arrays;
 
 /**
- * 角色校验切面 — 检查 @RequireRole 注解声明的角色要求
+ * 角色校验切面 — 拦截 @RequireRole 注解声明的方法，校验当前用户角色
+ * <p>
+ * 执行流程：从 RequestContextHolder 获取请求 → AuthInterceptor.getCurrentUser() 取用户 →
+ * 对比用户角色与 @RequireRole 声明的角色列表 → 不匹配则抛 BusinessException
+ * <p>
+ * 注意：此切面在 AuthInterceptor 之后执行，此时用户已通过 Session 认证
  */
 @Slf4j
 @Aspect

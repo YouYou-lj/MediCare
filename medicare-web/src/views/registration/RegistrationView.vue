@@ -45,7 +45,7 @@
     </el-row>
 
     <el-dialog v-model="regDialogVisible" title="选择患者" width="700px" destroy-on-close>
-      <el-input v-model="patientKw" placeholder="搜索患者" style="margin-bottom:12px" @keyup.enter="searchPatients" />
+      <el-input v-model="patientKw" placeholder="搜索患者" style="margin-bottom:12px" @keyup.enter="handleSearchPatients" />
       <el-table :data="patientList" stripe border @row-click="handleSelectPatient" highlight-current-row>
         <el-table-column prop="name" label="姓名" width="80" />
         <el-table-column prop="idCard" label="身份证号" width="170" />
@@ -63,7 +63,7 @@ import { ElMessage } from 'element-plus'
 import { listDepartments } from '../../api/department'
 import { getAvailableSchedules } from '../../api/schedule'
 import { listRegistrations, register, cancelRegistration } from '../../api/registration'
-import { searchPatients } from '../../api/patient'
+import { listPatients, searchPatients } from '../../api/patient'
 import type { Department, Schedule, Registration, Patient } from '../../types'
 
 const deptList = ref<Department[]>([])
@@ -84,9 +84,29 @@ async function loadSchedules() { try { const r = await getAvailableSchedules(que
 async function loadRegs() { try { const r = await listRegistrations(queryDate.value); regList.value = r.data } catch {} }
 function handleSelectSchedule(row: Schedule) { selectedSchedule.value = row }
 
-function openRegDialog() { regDialogVisible.value = true; patientKw.value = ''; patientList.value = []; selectedPatient.value = null }
+async function openRegDialog() {
+  regDialogVisible.value = true
+  patientKw.value = ''
+  selectedPatient.value = null
+  // 打开弹窗时加载全部患者
+  try {
+    const r = await listPatients()
+    patientList.value = r.data
+  } catch {}
+}
 
-async function handleSearchPatients() { if (!patientKw.value) return; try { const r = await searchPatients(patientKw.value); patientList.value = r.data } catch {} }
+async function handleSearchPatients() {
+  try {
+    if (!patientKw.value.trim()) {
+      // 关键词为空时加载全部患者
+      const r = await listPatients()
+      patientList.value = r.data
+    } else {
+      const r = await searchPatients(patientKw.value.trim())
+      patientList.value = r.data
+    }
+  } catch {}
+}
 function handleSelectPatient(row: Patient) { selectedPatient.value = row }
 
 async function handleRegister() {

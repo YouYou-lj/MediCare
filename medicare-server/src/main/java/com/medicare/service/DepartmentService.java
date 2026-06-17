@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 科室服务 — 科室 CRUD，名称唯一性校验
+ */
 @Service
 @RequiredArgsConstructor
 public class DepartmentService {

@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 科室控制器 — 科室 CRUD
+ * <p>
+ * 科室是医生和排班的顶层依赖，名称唯一；删除前需确认无关联医生
+ */
 @RestController
 @RequestMapping("/api/departments")
 @RequiredArgsConstructor

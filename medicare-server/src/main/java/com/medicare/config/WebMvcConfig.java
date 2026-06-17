@@ -8,7 +8,10 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Web MVC 配置 — 注册拦截器 + 跨域配置
+ * Web MVC 配置 — 注册认证拦截器 + 跨域配置
+ * <p>
+ * 拦截规则：拦截 /api/** 下所有请求，排除 /api/auth/login 和 /api/auth/logout；
+ * 跨域：允许 localhost 任意端口的前端访问，支持 Cookie（Session 需要 withCredentials）
  */
 @Configuration
 @RequiredArgsConstructor

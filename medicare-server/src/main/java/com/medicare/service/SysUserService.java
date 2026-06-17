@@ -9,6 +9,12 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 系统用户服务 — 用户 CRUD + 登录校验 + 密码管理
+ * <p>
+ * 密码策略：创建时 BCrypt 加密；登录时兼容明文和 BCrypt（迁移过渡期）；
+ * 修改密码需验证旧密码
+ */
 @Service
 @RequiredArgsConstructor
 public class SysUserService {
@@ -30,6 +36,7 @@ public class SysUserService {
                 .orElseThrow(() -> new BusinessException("用户名或密码错误"));
     }
 
+    /** 创建用户 — 密码 BCrypt 加密 + 用户名唯一性校验 */
     public SysUser create(SysUser user) {
         if (sysUserRepository.existsByUsername(user.getUsername())) {
             throw new BusinessException("用户名已存在");
@@ -51,6 +58,7 @@ public class SysUserService {
         return sysUserRepository.save(existing);
     }
 
+    /** 删除用户 — 禁止删除超级管理员 admin */
     public void delete(Long id) {
         SysUser user = findById(id);
         if ("admin".equals(user.getUsername())) {

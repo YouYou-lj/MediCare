@@ -4,20 +4,21 @@ import com.medicare.entity.Patient;
 import com.medicare.exception.BusinessException;
 import com.medicare.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 患者服务 — 患者 CRUD + 搜索，身份证号唯一性校验
+ */
 @Service
 @RequiredArgsConstructor
 public class PatientService {
 
     private final PatientRepository patientRepository;
 
-    public Page<Patient> findAll(Pageable pageable) {
-        return patientRepository.findAll(pageable);
+    public List<Patient> findAll() {
+        return patientRepository.findAll();
     }
 
     public Patient findById(Long id) {
@@ -29,6 +30,7 @@ public class PatientService {
         return patientRepository.search(keyword);
     }
 
+    /** 创建患者 — 身份证号唯一性校验 */
     public Patient create(Patient patient) {
         if (patientRepository.existsByIdCard(patient.getIdCard())) {
             throw new BusinessException("身份证号已存在");
@@ -36,6 +38,7 @@ public class PatientService {
         return patientRepository.save(patient);
     }
 
+    /** 更新患者 — 身份证号唯一性校验（排除自身） */
     public Patient update(Long id, Patient patient) {
         Patient existing = findById(id);
         if (patientRepository.existsByIdCardAndIdNot(patient.getIdCard(), id)) {
