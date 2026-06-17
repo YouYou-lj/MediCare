@@ -2,16 +2,17 @@ package com.medicare.controller;
 
 import com.medicare.auth.RequireRole;
 import com.medicare.dto.InventoryLogVO;
+import com.medicare.dto.PrescriptionCreateRequest;
 import com.medicare.dto.PrescriptionVO;
 import com.medicare.dto.Result;
 import com.medicare.entity.Prescription;
 import com.medicare.entity.PrescriptionItem;
 import com.medicare.service.PrescriptionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/prescriptions")
@@ -41,24 +42,20 @@ public class PrescriptionController {
 
     @PostMapping
     @RequireRole({"admin", "doctor"})
-    public Result<Prescription> create(@RequestBody Map<String, Object> body) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> prescMap = (Map<String, Object>) body.get("prescription");
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> itemsMaps = (List<Map<String, Object>>) body.get("items");
-
+    public Result<Prescription> create(@Valid @RequestBody PrescriptionCreateRequest request) {
+        PrescriptionCreateRequest.PrescriptionInfo info = request.getPrescription();
         Prescription prescription = new Prescription();
-        prescription.setRecordId(((Number) prescMap.get("recordId")).longValue());
-        prescription.setPatientId(((Number) prescMap.get("patientId")).longValue());
-        prescription.setDoctorId(((Number) prescMap.get("doctorId")).longValue());
+        prescription.setRecordId(info.getRecordId());
+        prescription.setPatientId(info.getPatientId());
+        prescription.setDoctorId(info.getDoctorId());
 
-        List<PrescriptionItem> items = itemsMaps.stream().map(m -> {
+        List<PrescriptionItem> items = request.getItems().stream().map(itemInfo -> {
             PrescriptionItem item = new PrescriptionItem();
-            item.setMedicineId(((Number) m.get("medicineId")).longValue());
-            item.setQuantity(((Number) m.get("quantity")).intValue());
-            item.setDosage((String) m.get("dosage"));
-            item.setUsageDesc((String) m.get("usageDesc"));
-            item.setUnitPrice(new java.math.BigDecimal(m.get("unitPrice").toString()));
+            item.setMedicineId(itemInfo.getMedicineId());
+            item.setQuantity(itemInfo.getQuantity());
+            item.setDosage(itemInfo.getDosage());
+            item.setUsageDesc(itemInfo.getUsageDesc());
+            item.setUnitPrice(itemInfo.getUnitPrice());
             return item;
         }).toList();
 
