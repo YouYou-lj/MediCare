@@ -80,6 +80,7 @@ CREATE TABLE registration (
     id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '挂号ID',
     patient_id      BIGINT UNSIGNED NOT NULL COMMENT '患者ID',
     schedule_id     BIGINT UNSIGNED NOT NULL COMMENT '排班ID',
+    doctor_id       BIGINT UNSIGNED COMMENT '医生ID（冗余，挂号时从排班复制）',
     reg_time        DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) COMMENT '挂号时间',
     status          TINYINT DEFAULT 0 COMMENT '状态：0-候诊 1-就诊中 2-已完成 3-已取消',
     seq_no          INT UNSIGNED COMMENT '序号',
@@ -90,7 +91,8 @@ CREATE TABLE registration (
     CONSTRAINT fk_reg_schedule FOREIGN KEY (schedule_id) REFERENCES schedule(id) ON DELETE RESTRICT,
     KEY idx_reg_patient (patient_id),
     KEY idx_reg_schedule (schedule_id),
-    KEY idx_reg_status (status)
+    KEY idx_reg_status (status),
+    KEY idx_reg_doctor (doctor_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='挂号表';
 
 -- ------------------------------------------------------------
