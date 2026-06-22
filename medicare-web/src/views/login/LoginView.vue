@@ -17,7 +17,7 @@
         </el-form-item>
       </el-form>
       <div class="login-tip">
-        <el-text type="info" size="small">演示账号: admin / admin123</el-text>
+        <el-text type="info" size="small">演示账号: admin / 12345</el-text>
       </div>
     </div>
   </div>
