@@ -8,6 +8,7 @@ build/
 out/
 
 # IDE
+.vscode/
 .idea/
 *.iml
 *.ipr
@@ -45,3 +46,6 @@ node_modules/
 dist/
 .env.local
 .env.*.local
+
+# Project documents not for repository push
+DOC/
