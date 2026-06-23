@@ -56,3 +56,20 @@ medicare-server/application-secret.yml
 
 # Project documents not for repository push
 DOC/
+
+# Test files — do not commit any test-related files
+src/test/
+**/src/test/
+scripts/test_*.py
+docs/test-*.md
+**/surefire-reports/
+**/*Test.class
+**/*Test.java
+**/test-classes/
+
+# Test libraries
+medicare-server/libs/junit*
+medicare-server/libs/mockito*
+medicare-server/libs/opentest4j*
+medicare-server/libs/byte-buddy*
+medicare-server/libs/objenesis*
