@@ -1,1 +1,0 @@
-import{r as e}from"./index-D4Q8mi8o.js";function u(){return e.get("/users")}function a(s){return e.post("/users",s)}function n(s,r){return e.put(`/users/${s}`,r)}function o(s){return e.delete(`/users/${s}`)}function d(s,r){return e.put(`/users/${s}/password`,r)}function c(){return e.get("/dashboard/stats")}export{d as a,a as c,o as d,c as g,u as l,n as u};

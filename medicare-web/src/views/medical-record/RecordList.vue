@@ -1,16 +1,39 @@
 <template>
-  <el-card>
-    <template #header><span>病历管理</span></template>
-    <el-table :data="recordList" stripe border>
-      <el-table-column prop="id" label="ID" width="70" />
-      <el-table-column prop="patientName" label="患者" width="100" />
-      <el-table-column prop="doctorName" label="医生" width="100" />
-      <el-table-column prop="chiefComplaint" label="主诉" show-overflow-tooltip />
-      <el-table-column prop="diagnosis" label="诊断" show-overflow-tooltip />
-      <el-table-column label="操作" width="100">
-        <template #default="{ row }"><el-button text type="primary" @click="viewDetail(row)">详情</el-button></template>
-      </el-table-column>
-    </el-table>
+  <div class="record-list">
+    <PageHeader title="病历管理" subtitle="查看已保存的病历记录" />
+
+    <el-card shadow="hover" class="data-card">
+      <DataToolbar
+        v-model:searchModelValue="keyword"
+        search-placeholder="搜索患者姓名"
+        show-refresh
+        @search="handleSearch"
+        @refresh="loadData"
+      />
+
+      <el-table v-loading="loading" :data="filteredList" stripe border>
+        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="patientName" label="患者" width="100" />
+        <el-table-column prop="doctorName" label="医生" width="100" />
+        <el-table-column prop="chiefComplaint" label="主诉" show-overflow-tooltip />
+        <el-table-column prop="diagnosis" label="诊断" show-overflow-tooltip />
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="{ row }">
+            <div class="action-buttons">
+              <el-button size="small" type="primary" @click="viewDetail(row)">详情</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <EmptyState
+        v-if="!loading && filteredList.length === 0"
+        icon="Document"
+        title="暂无病历数据"
+        description="医生在接诊并保存病历后会显示在此"
+      />
+    </el-card>
+
     <el-dialog v-model="detailVisible" title="病历详情" width="600px">
       <el-descriptions :column="1" border v-if="currentRecord">
         <el-descriptions-item label="患者">{{ currentRecord.patientName }}</el-descriptions-item>
@@ -23,20 +46,55 @@
         <el-descriptions-item label="医嘱">{{ currentRecord.advice }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
-  </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { listMedicalRecords } from '../../api/medical-record'
 import type { MedicalRecord } from '../../types'
+import PageHeader from '../../components/PageHeader.vue'
+import DataToolbar from '../../components/DataToolbar.vue'
+import EmptyState from '../../components/EmptyState.vue'
 
 const recordList = ref<MedicalRecord[]>([])
+const keyword = ref('')
 const detailVisible = ref(false)
 const currentRecord = ref<MedicalRecord | null>(null)
+const loading = ref(false)
 
-async function loadData() { try { const r = await listMedicalRecords(); recordList.value = r.data } catch {} }
+const filteredList = computed(() => {
+  if (!keyword.value) return recordList.value
+  const k = keyword.value.toLowerCase()
+  return recordList.value.filter(r => r.patientName?.toLowerCase().includes(k))
+})
+
+async function loadData() {
+  loading.value = true
+  try { const r = await listMedicalRecords(); recordList.value = r.data } catch {}
+  loading.value = false
+}
+
+function handleSearch() {}
+
 function viewDetail(row: MedicalRecord) { currentRecord.value = row; detailVisible.value = true }
 
 onMounted(loadData)
 </script>
+
+<style scoped>
+.record-list {
+  animation: fadeIn 0.4s ease-out;
+}
+.data-card {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+}
+</style>

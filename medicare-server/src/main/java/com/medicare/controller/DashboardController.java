@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 /**
  * 仪表盘控制器 — 首页统计数据
@@ -16,11 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
+@Tag(name = "首页仪表盘", description = "首页仪表盘相关接口")
 public class DashboardController {
 
     private final DashboardService dashboardService;
 
     @GetMapping("/stats")
+    @Operation(summary = "获取仪表盘统计数据")
     public Result<DashboardStats> stats() {
         return Result.ok(dashboardService.getDashboardStats());
     }

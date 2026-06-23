@@ -22,5 +22,14 @@ export function updatePassword(id: number, data: { oldPassword: string; newPassw
 }
 
 export function getDashboardStats() {
-  return request.get<any, Result<{ todayRegCount: number; waitingCount: number; stockAlertCount: number }>>('/dashboard/stats')
+  return request.get<any, Result<{
+    todayRegCount: number
+    waitingCount: number
+    stockAlertCount: number
+    completedCount: number
+    pendingDispenseCount: number
+    regTrend: { date: string; count: number }[]
+    deptRegDistribution: { deptName: string; count: number }[]
+    lowStockTopN: { medicineId: number; name: string; stock: number; safetyStock: number }[]
+  }>>('/dashboard/stats')
 }

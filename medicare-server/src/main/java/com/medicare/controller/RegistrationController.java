@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 /**
  * 挂号控制器 — 挂号预约核心流程
@@ -24,6 +26,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/registrations")
 @RequiredArgsConstructor
+@Tag(name = "挂号预约", description = "挂号预约相关接口")
 public class RegistrationController {
 
     private final RegistrationService registrationService;
@@ -31,6 +34,7 @@ public class RegistrationController {
     /** 查询今日挂号列表（可按日期、状态筛选，默认今天） */
     @GetMapping
     @RequireRole({"admin", "doctor"})
+    @Operation(summary = "查询挂号列表")
     public Result<List<RegistrationVO>> list(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) Integer status) {
@@ -44,6 +48,7 @@ public class RegistrationController {
      */
     @PostMapping
     @RequireRole("admin")
+    @Operation(summary = "挂号")
     public Result<Registration> register(@RequestBody Map<String, Long> body) {
         Long patientId = body.get("patientId");
         Long scheduleId = body.get("scheduleId");
@@ -53,6 +58,7 @@ public class RegistrationController {
     /** 叫号 — 挂号状态 0(候诊) → 1(就诊中) */
     @PutMapping("/{id}/call")
     @RequireRole({"admin", "doctor"})
+    @Operation(summary = "叫号")
     public Result<Void> callPatient(@PathVariable Long id) {
         registrationService.callPatient(id);
         return Result.ok();
@@ -61,6 +67,7 @@ public class RegistrationController {
     /** 完成就诊 — 挂号状态 1(就诊中) → 2(已完成) */
     @PutMapping("/{id}/complete")
     @RequireRole({"admin", "doctor"})
+    @Operation(summary = "完成就诊")
     public Result<Void> complete(@PathVariable Long id) {
         registrationService.completeRegistration(id);
         return Result.ok();
@@ -69,6 +76,7 @@ public class RegistrationController {
     /** 取消挂号 — 状态→已取消 + 事务内回增号源 */
     @DeleteMapping("/{id}")
     @RequireRole("admin")
+    @Operation(summary = "取消挂号")
     public Result<Void> cancel(@PathVariable Long id) {
         registrationService.cancelRegistration(id);
         return Result.ok();

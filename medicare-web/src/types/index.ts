@@ -190,3 +190,36 @@ export interface StockRequest {
   operator?: string
   remark?: string
 }
+
+// ========== AI 助手 ==========
+export interface AiChatContext {
+  route?: string
+  routeName?: string
+  [key: string]: unknown
+}
+
+export interface AiChatRequest {
+  message: string
+  sessionId?: string
+  context?: AiChatContext
+}
+
+export interface AiReference {
+  type?: string
+  id?: string
+  title?: string
+}
+
+export interface AiAction {
+  label?: string
+  type?: string
+  target?: string
+}
+
+export interface AiChatResponse {
+  answer: string
+  provider: string
+  model: string
+  references: AiReference[]
+  actions: AiAction[]
+}

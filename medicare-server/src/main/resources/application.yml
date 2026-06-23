@@ -2,6 +2,11 @@ server:
   port: 8080
 
 spring:
+  config:
+    import:
+      - optional:file:./application-secret.yml
+      - optional:file:./medicare-server/application-secret.yml
+
   datasource:
     url: jdbc:mysql://localhost:3306/medicare?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
     username: root
@@ -32,3 +37,21 @@ logging:
   level:
     com.medicare: debug
     org.hibernate.SQL: debug
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    tags-sorter: alpha
+    operations-sorter: alpha
+  packages-to-scan: com.medicare.controller
+
+ai:
+  provider: ${AI_PROVIDER:bailian}
+  api-key: ${AI_API_KEY:}
+  model: ${AI_MODEL:deepseek-v4-flash}
+  base-url: ${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+  timeout: ${AI_TIMEOUT:20s}

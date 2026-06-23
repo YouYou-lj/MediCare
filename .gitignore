@@ -21,6 +21,9 @@ out/
 # Maven
 .mvn/
 !/.mvn/wrapper/maven-wrapper.jar
+!medicare-server/.mvn/
+!medicare-server/.mvn/maven.config
+!medicare-server/.mvn/settings.xml
 
 # Logs
 logs/
@@ -46,6 +49,10 @@ node_modules/
 dist/
 .env.local
 .env.*.local
+
+# Local AI secrets
+application-secret.yml
+medicare-server/application-secret.yml
 
 # Project documents not for repository push
 DOC/

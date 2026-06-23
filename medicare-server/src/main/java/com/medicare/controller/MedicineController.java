@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 /**
  * 药品控制器 — 药品 CRUD + 库存管理（入库/出库/库存预警）
@@ -19,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/medicines")
 @RequiredArgsConstructor
+@Tag(name = "药品库存", description = "药品库存相关接口")
 public class MedicineController {
 
     private final MedicineService medicineService;
@@ -26,6 +29,7 @@ public class MedicineController {
     /** 药品列表（支持关键词模糊搜索，无关键词时返回全部启用状态药品） */
     @GetMapping
     @RequireRole({"admin", "doctor", "pharmacist"})
+    @Operation(summary = "查询药品列表")
     public Result<List<Medicine>> list(@RequestParam(required = false) String keyword) {
         if (keyword != null && !keyword.isBlank()) {
             return Result.ok(medicineService.search(keyword));
@@ -36,30 +40,35 @@ public class MedicineController {
     /** 库存预警 — 查询库存低于安全存量的药品 */
     @GetMapping("/low-stock")
     @RequireRole({"admin", "pharmacist"})
+    @Operation(summary = "查询库存预警药品")
     public Result<List<Medicine>> lowStock() {
         return Result.ok(medicineService.findLowStock());
     }
 
     @GetMapping("/{id}")
     @RequireRole({"admin", "doctor", "pharmacist"})
+    @Operation(summary = "根据ID查询药品详情")
     public Result<Medicine> detail(@PathVariable Long id) {
         return Result.ok(medicineService.findById(id));
     }
 
     @PostMapping
     @RequireRole({"admin", "pharmacist"})
+    @Operation(summary = "新增药品")
     public Result<Medicine> create(@Valid @RequestBody Medicine medicine) {
         return Result.ok(medicineService.create(medicine));
     }
 
     @PutMapping("/{id}")
     @RequireRole({"admin", "pharmacist"})
+    @Operation(summary = "更新药品")
     public Result<Medicine> update(@PathVariable Long id, @Valid @RequestBody Medicine medicine) {
         return Result.ok(medicineService.update(id, medicine));
     }
 
     @DeleteMapping("/{id}")
     @RequireRole("admin")
+    @Operation(summary = "删除药品")
     public Result<Void> delete(@PathVariable Long id) {
         medicineService.delete(id);
         return Result.ok();
@@ -68,6 +77,7 @@ public class MedicineController {
     /** 入库 — 增加库存 + 记录日志（含批次号、有效期） */
     @PostMapping("/{id}/stock-in")
     @RequireRole({"admin", "pharmacist"})
+    @Operation(summary = "药品入库")
     public Result<Void> stockIn(@PathVariable Long id, @Valid @RequestBody StockRequest request) {
         medicineService.stockIn(id, request.getQuantity(), request.getBatchNo(),
                 request.getExpiryDate(), request.getOperator(), request.getRemark());
@@ -77,6 +87,7 @@ public class MedicineController {
     /** 出库 — 安全扣减库存（防超卖）+ 记录日志 */
     @PostMapping("/{id}/stock-out")
     @RequireRole({"admin", "pharmacist"})
+    @Operation(summary = "药品出库")
     public Result<Void> stockOut(@PathVariable Long id, @Valid @RequestBody StockRequest request) {
         medicineService.stockOut(id, request.getQuantity(), request.getBatchNo(),
                 request.getExpiryDate(), request.getOperator(), request.getRemark());

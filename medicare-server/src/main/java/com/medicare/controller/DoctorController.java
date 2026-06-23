@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 /**
  * 医生控制器 — 医生 CRUD + 按科室筛选
@@ -19,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/doctors")
 @RequiredArgsConstructor
+@Tag(name = "医生管理", description = "医生管理相关接口")
 public class DoctorController {
 
     private final DoctorService doctorService;
@@ -26,30 +29,35 @@ public class DoctorController {
     /** 医生列表 — 可按科室ID筛选，返回含科室名的 VO */
     @GetMapping
     @RequireRole({"admin", "doctor"})
+    @Operation(summary = "查询医生列表")
     public Result<List<DoctorVO>> list(@RequestParam(required = false) Long deptId) {
         return Result.ok(doctorService.findDoctorVOList(deptId));
     }
 
     @GetMapping("/{id}")
     @RequireRole({"admin", "doctor"})
+    @Operation(summary = "根据ID查询医生详情")
     public Result<Doctor> detail(@PathVariable Long id) {
         return Result.ok(doctorService.findById(id));
     }
 
     @PostMapping
     @RequireRole("admin")
+    @Operation(summary = "新增医生")
     public Result<Doctor> create(@Valid @RequestBody Doctor doctor) {
         return Result.ok(doctorService.create(doctor));
     }
 
     @PutMapping("/{id}")
     @RequireRole("admin")
+    @Operation(summary = "更新医生")
     public Result<Doctor> update(@PathVariable Long id, @Valid @RequestBody Doctor doctor) {
         return Result.ok(doctorService.update(id, doctor));
     }
 
     @DeleteMapping("/{id}")
     @RequireRole("admin")
+    @Operation(summary = "删除医生")
     public Result<Void> delete(@PathVariable Long id) {
         doctorService.delete(id);
         return Result.ok();

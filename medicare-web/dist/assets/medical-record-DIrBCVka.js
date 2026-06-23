@@ -1,1 +1,0 @@
-import{r as e}from"./index-D4Q8mi8o.js";function a(r,c){return e.get("/medical-records",{params:{patientId:r,registrationId:c}})}function o(r){return e.post("/medical-records",r)}export{o as c,a as l};

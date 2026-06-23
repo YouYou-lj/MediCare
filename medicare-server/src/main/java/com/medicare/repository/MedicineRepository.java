@@ -34,6 +34,12 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
     List<Medicine> findLowStockMedicines();
 
     /**
+     * 低库存药品 TopN（按库存缺口排序）
+     */
+    @Query("SELECT m FROM Medicine m WHERE m.stock <= m.safetyStock AND m.status = 1 ORDER BY (m.safetyStock - m.stock) DESC")
+    List<Medicine> findLowStockTopN(@Param("topN") int topN);
+
+    /**
      * 按关键字搜索（名称/拼音码）
      */
     @Query("SELECT m FROM Medicine m WHERE m.status = 1 AND (m.name LIKE %:keyword% OR m.pinyinCode LIKE %:keyword%)")

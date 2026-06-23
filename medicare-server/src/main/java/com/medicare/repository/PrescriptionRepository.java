@@ -50,7 +50,15 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
     int cancel(@Param("id") Long id);
 
     /**
-     * 按医生查询处方
+     * 查询待取药处方数（今日创建且未取药）
      */
+    @Query("SELECT COUNT(p) FROM Prescription p WHERE p.status IN (0, 1) AND DATE(p.createTime) = :today")
+    long countPendingDispenseToday(@Param("today") LocalDate today);
+
+    /**
+     * 今日已完成就诊数
+     */
+    @Query("SELECT COUNT(p) FROM Prescription p WHERE p.status = 2 AND DATE(p.createTime) = :today")
+    long countDispensedToday(@Param("today") LocalDate today);
     List<Prescription> findByDoctorIdOrderByCreateTimeDesc(Long doctorId);
 }

@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 /**
  * 排班控制器 — 排班 CRUD + 可用号源查询
@@ -22,6 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/schedules")
 @RequiredArgsConstructor
+@Tag(name = "排班管理", description = "排班管理相关接口")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
@@ -29,6 +32,7 @@ public class ScheduleController {
     /** 排班列表 — 可按日期、科室筛选，返回含医生名/科室名的 VO */
     @GetMapping
     @RequireRole({"admin", "doctor"})
+    @Operation(summary = "查询排班列表")
     public Result<List<ScheduleVO>> list(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) Long deptId) {
@@ -38,6 +42,7 @@ public class ScheduleController {
     /** 可用号源 — 仅返回剩余号源 > 0 的排班（供挂号选择） */
     @GetMapping("/available")
     @RequireRole({"admin", "doctor"})
+    @Operation(summary = "查询可用号源")
     public Result<List<ScheduleVO>> available(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) Long deptId) {
@@ -46,6 +51,7 @@ public class ScheduleController {
 
     @GetMapping("/{id}")
     @RequireRole({"admin", "doctor"})
+    @Operation(summary = "根据ID查询排班详情")
     public Result<Schedule> detail(@PathVariable Long id) {
         return Result.ok(scheduleService.findById(id));
     }
@@ -53,18 +59,21 @@ public class ScheduleController {
     /** 创建排班 — 校验医生存在 + 自动初始化剩余号源 */
     @PostMapping
     @RequireRole("admin")
+    @Operation(summary = "新增排班")
     public Result<Schedule> create(@Valid @RequestBody Schedule schedule) {
         return Result.ok(scheduleService.create(schedule));
     }
 
     @PutMapping("/{id}")
     @RequireRole("admin")
+    @Operation(summary = "更新排班")
     public Result<Schedule> update(@PathVariable Long id, @Valid @RequestBody Schedule schedule) {
         return Result.ok(scheduleService.update(id, schedule));
     }
 
     @DeleteMapping("/{id}")
     @RequireRole("admin")
+    @Operation(summary = "删除排班")
     public Result<Void> delete(@PathVariable Long id) {
         scheduleService.delete(id);
         return Result.ok();

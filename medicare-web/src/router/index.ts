@@ -44,7 +44,7 @@ const router = createRouter({
           path: 'workstation',
           name: 'Workstation',
           component: () => import('../views/doctor/WorkstationView.vue'),
-          meta: { title: '医生工作站', icon: 'Stethoscope', roles: ['admin', 'doctor'] },
+          meta: { title: '医生工作站', icon: 'Monitor', roles: ['admin', 'doctor'] },
         },
         {
           path: 'medical-records',

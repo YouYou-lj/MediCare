@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 /**
  * 用户管理控制器 — 系统用户 CRUD + 修改密码
@@ -22,6 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Tag(name = "用户管理", description = "用户管理相关接口")
 public class UserController {
 
     private final SysUserService sysUserService;
@@ -29,6 +32,7 @@ public class UserController {
     /** 用户列表 — 返回所有用户（密码置空） */
     @GetMapping
     @RequireRole("admin")
+    @Operation(summary = "查询用户列表")
     public Result<List<SysUser>> list() {
         List<SysUser> users = sysUserService.findAll();
         users.forEach(u -> u.setPassword(null));
@@ -38,6 +42,7 @@ public class UserController {
     /** 创建用户 — 密码 BCrypt 加密 + 用户名唯一性校验 */
     @PostMapping
     @RequireRole("admin")
+    @Operation(summary = "新增用户")
     public Result<SysUser> create(@Valid @RequestBody SysUser user) {
         SysUser created = sysUserService.create(user);
         created.setPassword(null);
@@ -46,6 +51,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     @RequireRole("admin")
+    @Operation(summary = "更新用户")
     public Result<SysUser> update(@PathVariable Long id, @Valid @RequestBody SysUser user) {
         SysUser updated = sysUserService.update(id, user);
         updated.setPassword(null);
@@ -54,6 +60,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @RequireRole("admin")
+    @Operation(summary = "删除用户")
     public Result<Void> delete(@PathVariable Long id) {
         sysUserService.delete(id);
         return Result.ok();
@@ -61,6 +68,7 @@ public class UserController {
 
     /** 修改密码 — 只能改自己的密码，需验证旧密码 */
     @PutMapping("/{id}/password")
+    @Operation(summary = "修改密码")
     public Result<Void> changePassword(@PathVariable Long id,
                                        @Valid @RequestBody ChangePasswordRequest request,
                                        HttpServletRequest httpRequest) {

@@ -487,7 +487,17 @@ def test_settings():
         IDS["test_user"] = r["data"]["id"]
     test("设置", "新增用户", r, ok)
 
-    # 9.3 修改密码 (admin改自己的密码)
+    # 9.3 修改用户
+    if IDS.get("test_user"):
+        r, ok = api("PUT", f"/users/{IDS['test_user']}", {
+            "username": "testdoctor",
+            "realName": "测试医生-修改",
+            "role": "doctor",
+            "status": 1
+        })
+        test("设置", "修改用户", r, ok)
+
+    # 9.4 修改密码 (admin改自己的密码)
     r, ok = api("PUT", "/users/1/password", {
         "oldPassword": "12345",
         "newPassword": "12345"
@@ -496,7 +506,20 @@ def test_settings():
 
 
 # ============================================================
-# 10. 角色权限校验 — PR: admin/doctor/pharmacist 角色隔离
+# 10. 接口文档测试
+# ============================================================
+def test_swagger():
+    print("\n📋 10. 接口文档测试")
+    # 10.1 Swagger UI 页面
+    r, ok = api("GET", "/swagger-ui.html", expect_code=200)
+    test("文档", "Swagger UI 页面", r, ok)
+    # 10.2 OpenAPI JSON
+    r, ok = api("GET", "/v3/api-docs", expect_code=200)
+    test("文档", "OpenAPI JSON", r, ok)
+
+
+# ============================================================
+# 11. 角色权限校验 — PR: admin/doctor/pharmacist 角色隔离
 # ============================================================
 def test_role_auth():
     global COOKIE
@@ -643,6 +666,7 @@ if __name__ == "__main__":
         test_prescription()
         test_pharmacy()
         test_settings()
+        test_swagger()
         test_role_auth()
     except Exception as e:
         print(f"\n💥 测试执行异常: {e}")

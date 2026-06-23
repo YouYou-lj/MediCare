@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
  * 全局异常处理器 — 统一异常响应格式
  * <p>
  * 处理顺序（由具体到通用）：
- * 1. BusinessException — 业务异常（400，携带业务错误信息）
+ * 1. BusinessException — 业务异常（按 code 映射 HTTP 状态，携带业务错误信息）
  * 2. MethodArgumentNotValidException — @Valid 校验失败（400，拼接字段错误）
  * 3. HttpMessageNotReadableException — 请求体解析失败（400）
  * 4. MissingServletRequestParameterException — 缺少必要参数（400）
@@ -34,11 +35,18 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /** 业务异常 — 返回 400 + 业务错误信息 */
+    /** 业务异常 — 按业务 code 映射 HTTP 状态，并保留统一响应体 */
     @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Void> handleBusinessException(BusinessException e) {
-        return Result.error(e.getCode(), e.getMessage());
+    public ResponseEntity<Result<Void>> handleBusinessException(BusinessException e) {
+        HttpStatus status = switch (e.getCode()) {
+            case 401 -> HttpStatus.UNAUTHORIZED;
+            case 403 -> HttpStatus.FORBIDDEN;
+            case 409 -> HttpStatus.CONFLICT;
+            case 502 -> HttpStatus.BAD_GATEWAY;
+            case 504 -> HttpStatus.GATEWAY_TIMEOUT;
+            default -> e.getCode() >= 500 ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(Result.error(e.getCode(), e.getMessage()));
     }
 
     /** @Valid 校验失败 — 拼接所有字段错误信息 */

@@ -66,8 +66,23 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
     long countByScheduleAndNotCancelled(@Param("scheduleId") Long scheduleId);
 
     /**
-     * 按患者查询挂号记录
+     * 按日期范围统计每日挂号数
      */
+    @Query(value = "SELECT DATE(r.reg_time) as reg_date, COUNT(*) as cnt FROM registration r WHERE DATE(r.reg_time) >= :startDate GROUP BY DATE(r.reg_time) ORDER BY reg_date",
+            nativeQuery = true)
+    List<Object[]> countRegByDateRange(@Param("startDate") LocalDate startDate);
+
+    /**
+     * 按科室统计今日挂号数
+     */
+    @Query(value = "SELECT dep.name, COUNT(*) FROM registration r "
+            + "LEFT JOIN schedule s ON r.schedule_id = s.id "
+            + "LEFT JOIN doctor d ON s.doctor_id = d.id "
+            + "LEFT JOIN department dep ON d.department_id = dep.id "
+            + "WHERE DATE(r.reg_time) = :date "
+            + "GROUP BY dep.name",
+            nativeQuery = true)
+    List<Object[]> countTodayRegByDept(@Param("date") LocalDate date);
     @Query(value = "SELECT r.id, r.patient_id AS patientId, r.schedule_id AS scheduleId, s.doctor_id AS doctorId, "
             + "r.reg_time AS regTime, r.status, r.seq_no AS seqNo, r.fee, r.create_time AS createTime, "
             + "p.name AS patientName, d.name AS doctorName, dep.name AS departmentName, s.time_slot AS timeSlot "

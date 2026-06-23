@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 /**
  * 处方控制器 — 开处方 / 取药 / 作废处方 / 库存日志
@@ -28,6 +30,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/prescriptions")
 @RequiredArgsConstructor
+@Tag(name = "处方管理", description = "处方管理相关接口")
 public class PrescriptionController {
 
     private final PrescriptionService prescriptionService;
@@ -35,6 +38,7 @@ public class PrescriptionController {
     /** 处方列表查询（可按患者ID、是否今天筛选） */
     @GetMapping
     @RequireRole({"admin", "doctor", "pharmacist"})
+    @Operation(summary = "查询处方列表")
     public Result<List<PrescriptionListVO>> list(@RequestParam(required = false) Long patientId,
                                             @RequestParam(required = false) Boolean today) {
         return Result.ok(prescriptionService.listPrescriptionVOs(patientId, today));
@@ -43,6 +47,7 @@ public class PrescriptionController {
     /** 处方详情 — 含明细项和关联的药品名称/规格/单位 */
     @GetMapping("/{id}")
     @RequireRole({"admin", "doctor", "pharmacist"})
+    @Operation(summary = "根据ID查询处方详情")
     public Result<PrescriptionVO> detail(@PathVariable Long id) {
         return Result.ok(prescriptionService.findPrescriptionVOById(id));
     }
@@ -50,6 +55,7 @@ public class PrescriptionController {
     /** 按病历ID查询处方（医生工作站：写完病历后查看对应处方） */
     @GetMapping("/by-record/{recordId}")
     @RequireRole({"admin", "doctor", "pharmacist"})
+    @Operation(summary = "按病历ID查询处方")
     public Result<PrescriptionVO> byRecord(@PathVariable Long recordId) {
         return Result.ok(prescriptionService.findByRecordId(recordId));
     }
@@ -60,6 +66,7 @@ public class PrescriptionController {
      */
     @PostMapping
     @RequireRole({"admin", "doctor"})
+    @Operation(summary = "开立处方")
     public Result<Prescription> create(@Valid @RequestBody PrescriptionCreateRequest request) {
         PrescriptionCreateRequest.PrescriptionInfo info = request.getPrescription();
         Prescription prescription = new Prescription();
@@ -83,6 +90,7 @@ public class PrescriptionController {
     /** 取药 — 药房确认发药，处方状态→已取药 */
     @PutMapping("/{id}/dispense")
     @RequireRole({"admin", "pharmacist"})
+    @Operation(summary = "处方取药")
     public Result<Void> dispense(@PathVariable Long id) {
         prescriptionService.dispense(id);
         return Result.ok();
@@ -91,6 +99,7 @@ public class PrescriptionController {
     /** 作废处方 — 逐条回滚库存 + 记录日志 + 更新处方状态 */
     @PutMapping("/{id}/cancel")
     @RequireRole({"admin", "pharmacist"})
+    @Operation(summary = "作废处方")
     public Result<Void> cancel(@PathVariable Long id) {
         prescriptionService.cancelPrescription(id);
         return Result.ok();
@@ -99,6 +108,7 @@ public class PrescriptionController {
     /** 库存变动日志查询（可按药品ID筛选） */
     @GetMapping("/inventory-logs")
     @RequireRole({"admin", "pharmacist"})
+    @Operation(summary = "查询库存变动日志")
     public Result<List<InventoryLogVO>> inventoryLogs(@RequestParam(required = false) Long medicineId) {
         return Result.ok(prescriptionService.findInventoryLogVOList(medicineId));
     }

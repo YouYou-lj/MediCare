@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 /**
  * 认证控制器 — 登录 / 登出 / 获取当前用户
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "认证管理", description = "认证管理相关接口")
 public class AuthController {
 
     private final SysUserService sysUserService;
@@ -30,6 +33,7 @@ public class AuthController {
      * 密码兼容明文（迁移阶段）与 BCrypt 两种格式
      */
     @PostMapping("/login")
+    @Operation(summary = "用户登录")
     public Result<SysUser> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         SysUser user = sysUserService.login(request.getUsername(), request.getPassword());
         // 密码清空，不返回给前端
@@ -43,6 +47,7 @@ public class AuthController {
      * 登出 — 销毁 Session
      */
     @PostMapping("/logout")
+    @Operation(summary = "用户登出")
     public Result<Void> logout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session != null) {
@@ -55,6 +60,7 @@ public class AuthController {
      * 获取当前登录用户信息（前端刷新页面后恢复登录态）
      */
     @GetMapping("/current")
+    @Operation(summary = "获取当前登录用户信息")
     public Result<SysUser> current(HttpServletRequest request) {
         SysUser user = AuthInterceptor.getCurrentUser(request);
         if (user != null) {

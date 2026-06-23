@@ -1,1 +1,0 @@
-import{r as e}from"./index-D4Q8mi8o.js";function s(t=1,n=20){return e.get("/patients",{params:{page:t,size:n}})}function r(t){return e.get("/patients/search",{params:{keyword:t}})}function i(t){return e.post("/patients",t)}function u(t,n){return e.put(`/patients/${t}`,n)}function p(t){return e.delete(`/patients/${t}`)}export{i as c,p as d,s as l,r as s,u};
