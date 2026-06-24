@@ -47,6 +47,7 @@ Thumbs.db
 # Node / Frontend
 node_modules/
 dist/
+medicare-web/dist/
 .env.local
 .env.*.local
 
@@ -56,6 +57,17 @@ medicare-server/application-secret.yml
 
 # Project documents not for repository push
 DOC/
+docs/baseline-screenshots/
+
+# Claude / Copilot local configs
+.claude/
+.github/modernize/
+
+# Build outputs
+medicare-server/out/
+medicare-server-archetype/out/
+medicare-server/target/
+medicare-server-archetype/target/
 
 # Test files — do not commit any test-related files
 src/test/
@@ -71,5 +83,10 @@ docs/test-*.md
 medicare-server/libs/junit*
 medicare-server/libs/mockito*
 medicare-server/libs/opentest4j*
-medicare-server/libs/byte-buddy*
+medicare-server/libs/byte-buddy-agent*
 medicare-server/libs/objenesis*
+medicare-server-archetype/libs/junit*
+medicare-server-archetype/libs/mockito*
+medicare-server-archetype/libs/opentest4j*
+medicare-server-archetype/libs/byte-buddy-agent*
+medicare-server-archetype/libs/objenesis*

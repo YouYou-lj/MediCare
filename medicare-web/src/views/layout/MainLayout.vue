@@ -105,6 +105,8 @@ const allMenuItems = [
   { path: '/pharmacy', title: '药品库存', icon: 'FirstAidKit', roles: ['admin', 'doctor', 'pharmacist'] },
   { path: '/prescriptions', title: '处方管理', icon: 'Notebook', roles: ['admin', 'doctor', 'pharmacist'] },
   { path: '/settings', title: '系统设置', icon: 'Setting', roles: ['admin', 'doctor', 'pharmacist'] },
+  { path: '/knowledge-upload', title: '知识库上传', icon: 'UploadFilled', roles: ['admin'] },
+  { path: '/knowledge-manage', title: '知识库管理', icon: 'Management', roles: ['admin'] },
 ]
 
 const menuItems = computed(() => {

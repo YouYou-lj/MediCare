@@ -15,6 +15,9 @@ public class AiChatResponse {
     @Schema(description = "AI 回复内容")
     private String answer;
 
+    @Schema(description = "会话标识，新建会话时后端返回")
+    private String sessionId;
+
     @Schema(description = "模型供应商")
     private String provider;
 
@@ -22,7 +25,7 @@ public class AiChatResponse {
     private String model;
 
     @Builder.Default
-    @Schema(description = "引用来源，Step 7 暂为空，RAG 阶段补充")
+    @Schema(description = "检索到的知识库引用来源")
     private List<AiReference> references = Collections.emptyList();
 
     @Builder.Default
@@ -36,6 +39,8 @@ public class AiChatResponse {
         private String type;
         private String id;
         private String title;
+        private String sourcePath;
+        private String content;
     }
 
     @Data

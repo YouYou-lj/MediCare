@@ -1,13 +1,35 @@
 import request from './index'
-import type { AiChatRequest, AiChatResponse, Result } from '../types'
+import type { AiChatMessage, AiChatRequest, AiChatResponse, AiChatSession, AiReference, RagQueryRequest, RagReindexResponse, Result } from '../types'
 
 export function createAiChat(data: AiChatRequest) {
   return request.post<any, Result<AiChatResponse>>('/ai/chat', data)
 }
 
+export function fetchChatSessions() {
+  return request.get<any, Result<AiChatSession[]>>('/ai/chat/sessions')
+}
+
+export function fetchChatMessages(sessionId: number) {
+  return request.get<any, Result<AiChatMessage[]>>(`/ai/chat/sessions/${sessionId}/messages`)
+}
+
+export function deleteChatSession(sessionId: number) {
+  return request.delete<any, Result<void>>(`/ai/chat/sessions/${sessionId}`)
+}
+
+export function createRagReindex() {
+  return request.post<any, Result<RagReindexResponse>>('/ai/rag/reindex')
+}
+
+export function createRagQuery(data: RagQueryRequest) {
+  return request.post<any, Result<AiChatResponse>>('/ai/rag/query', data)
+}
+
 export interface AiChatStreamCallbacks {
   onChunk: (text: string) => void
-  onDone?: (meta: Pick<AiChatResponse, 'provider' | 'model'>) => void
+  onReferences?: (references: AiReference[]) => void
+  onReferencesError?: (message: string) => void
+  onDone?: (meta: Pick<AiChatResponse, 'provider' | 'model' | 'sessionId' | 'references'>) => void
   onError?: (message: string) => void
 }
 
@@ -66,6 +88,10 @@ function parseSseBuffer(buffer: string, callbacks: AiChatStreamCallbacks) {
 
     if (event.name === 'chunk') {
       callbacks.onChunk(event.data)
+    } else if (event.name === 'references') {
+      callbacks.onReferences?.(parseReferences(event.data))
+    } else if (event.name === 'references_error') {
+      callbacks.onReferencesError?.(event.data || '检索失败')
     } else if (event.name === 'done') {
       callbacks.onDone?.(parseDoneMeta(event.data))
     } else if (event.name === 'error') {
@@ -95,14 +121,25 @@ function parseSseEvent(raw: string) {
   return { name, data: data.join('\n') }
 }
 
-function parseDoneMeta(data: string): Pick<AiChatResponse, 'provider' | 'model'> {
+function parseReferences(data: string): AiReference[] {
+  try {
+    const list = JSON.parse(data)
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+
+function parseDoneMeta(data: string): Pick<AiChatResponse, 'provider' | 'model' | 'sessionId' | 'references'> {
   try {
     const meta = JSON.parse(data)
     return {
       provider: meta.provider || 'bailian',
-      model: meta.model || ''
+      model: meta.model || '',
+      sessionId: meta.sessionId || '',
+      references: Array.isArray(meta.references) ? meta.references : []
     }
   } catch {
-    return { provider: 'bailian', model: '' }
+    return { provider: 'bailian', model: '', sessionId: '', references: [] }
   }
 }

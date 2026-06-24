@@ -23,6 +23,8 @@ public class AiProperties {
 
     private String model = "gpt-4o-mini";
 
+    private String embeddingModel = "text-embedding-v4";
+
     private String baseUrl = "https://api.openai.com/v1";
 
     private Duration timeout = Duration.ofSeconds(20);

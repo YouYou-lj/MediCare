@@ -175,15 +175,17 @@ onMounted(async () => { await listDepartments().then(r => deptList.value = r.dat
 .toolbar {
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin-bottom: 16px;
+  overflow: hidden;
 }
 .action-buttons {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
-  gap: 4px;
+  gap: 0;
+  white-space: nowrap;
 }
 .reg-btn-wrap {
   margin-top: 16px;

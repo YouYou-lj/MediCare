@@ -28,6 +28,11 @@
 | `api-contract` | REST API 设计、请求响应格式、接口契约、前后端联调约定 |
 | `database-design` | MySQL 表设计、字段、索引、迁移脚本、向量库和 AI 数据表设计 |
 | `code-review` | 代码审查、质量检查、风险识别、测试缺口检查 |
+| `medical-agent` | AI Agent 工具调用开发规范：Tool 接口、意图识别、权限控制、只读约束 |
+| `record-assist` | 病历辅助功能开发规范：AI 病历建议生成、插入交互、安全边界 |
+| `drug-risk-check` | 用药风险检查功能开发规范：过敏检查、库存检查、剂量检查规则 |
+| `recommendation` | 个性化推荐功能开发规范：规则引擎、角色差异化、推荐卡片 UI |
+| `behavior-analysis` | 用户行为分析功能开发规范：埋点事件、上报策略、分析图表 |
 
 ---
 
@@ -319,11 +324,11 @@ medicare-server/src/main/java/com/medicare/auth/
 | AI 基础对话 | 第 7 步 | `planning-with-files-zh`、`api-contract`、`springboot-backend`、`vue-frontend` |
 | AI 对话历史 | 第 8 步 | `planning-with-files-zh`、`database-design`、`api-contract`、`springboot-backend`、`vue-frontend` |
 | RAG 知识库 | 第 9 步 | `planning-with-files-zh`、`database-design`、`api-contract`、`springboot-backend` |
-| 业务只读 Agent | 第 10 步 | `planning-with-files-zh`、`api-contract`、`springboot-backend`、`code-review` |
-| 病历辅助 | 第 11 步 | `planning-with-files-zh`、`api-contract`、`springboot-backend`、`vue-frontend`、`code-review` |
-| 用药风险提醒 | 第 12 步 | `planning-with-files-zh`、`database-design`、`api-contract`、`springboot-backend`、`vue-frontend`、`code-review` |
-| 个性化推荐 | 第 13 步 | `planning-with-files-zh`、`database-design`、`api-contract`、`springboot-backend`、`vue-frontend` |
-| 用户行为分析 | 第 14 步 | `planning-with-files-zh`、`database-design`、`api-contract`、`springboot-backend`、`vue-frontend` |
+| 业务只读 Agent | 第 10 步 | `planning-with-files-zh`、`medical-agent`、`api-contract`、`springboot-backend`、`code-review` |
+| 病历辅助 | 第 11 步 | `planning-with-files-zh`、`record-assist`、`api-contract`、`springboot-backend`、`vue-frontend`、`code-review` |
+| 用药风险提醒 | 第 12 步 | `planning-with-files-zh`、`drug-risk-check`、`database-design`、`api-contract`、`springboot-backend`、`vue-frontend`、`code-review` |
+| 个性化推荐 | 第 13 步 | `planning-with-files-zh`、`recommendation`、`database-design`、`api-contract`、`springboot-backend`、`vue-frontend` |
+| 用户行为分析 | 第 14 步 | `planning-with-files-zh`、`behavior-analysis`、`database-design`、`api-contract`、`springboot-backend`、`vue-frontend` |
 | 全流程联调 | 第 15 步 | `planning-with-files-zh`、`code-review`、`api-contract` |
 | 部署演示 | 第 16 步 | `planning-with-files-zh`、`code-review` |
 

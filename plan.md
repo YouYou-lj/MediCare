@@ -1064,7 +1064,7 @@ scripts/test_functional.py
 建议覆盖流程：
 
 ```text
-登录 admin
+登录 admin（密码 12345）
 → 创建患者
 → 查询可用排班
 → 挂号
@@ -1116,6 +1116,20 @@ npm run dev
 cd medicare-server
 mvn spring-boot:run
 ```
+
+### 默认演示账号
+
+系统初始化后内置默认管理员账号，用于本地开发、测试和演示：
+
+| 账号 | 密码 | 角色 |
+|------|------|------|
+| `admin` | `12345` | 管理员 |
+
+> 说明：`sql/medicare.sql` 初始化时 `sys_user` 表中的管理员密码应为 `12345` 的 BCrypt 加密值。若本地验证时发现密码不一致，可手动执行以下 SQL 重置为默认密码：
+>
+> ```sql
+> UPDATE sys_user SET password = '$2a$10$WONCjn94whlUczwJgKUNJOxai4IiYNoqJZNjNZr94IzVap9hpHYOG' WHERE username = 'admin';
+> ```
 
 ### 9.2 生产部署
 

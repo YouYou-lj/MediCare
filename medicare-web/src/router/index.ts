@@ -70,6 +70,18 @@ const router = createRouter({
           component: () => import('../views/settings/SettingsView.vue'),
           meta: { title: '系统设置', icon: 'Setting', roles: ['admin', 'doctor', 'pharmacist'] },
         },
+        {
+          path: 'knowledge-upload',
+          name: 'KnowledgeUpload',
+          component: () => import('../views/knowledge-upload/KnowledgeUploadView.vue'),
+          meta: { title: '知识库上传', icon: 'UploadFilled', roles: ['admin'] },
+        },
+        {
+          path: 'knowledge-manage',
+          name: 'KnowledgeManage',
+          component: () => import('../views/knowledge-manage/KnowledgeManageView.vue'),
+          meta: { title: '知识库管理', icon: 'Management', roles: ['admin'] },
+        },
       ],
     },
   ],

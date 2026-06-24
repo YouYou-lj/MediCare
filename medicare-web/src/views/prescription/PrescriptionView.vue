@@ -212,9 +212,10 @@ onMounted(loadRegs)
 .presc-toolbar {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin-bottom: 12px;
   align-items: center;
+  overflow: hidden;
 }
 .presc-footer {
   margin-top: 12px;

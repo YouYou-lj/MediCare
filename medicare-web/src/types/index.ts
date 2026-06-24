@@ -208,6 +208,8 @@ export interface AiReference {
   type?: string
   id?: string
   title?: string
+  sourcePath?: string
+  content?: string
 }
 
 export interface AiAction {
@@ -218,8 +220,55 @@ export interface AiAction {
 
 export interface AiChatResponse {
   answer: string
+  sessionId?: string
   provider: string
   model: string
   references: AiReference[]
   actions: AiAction[]
+}
+
+export interface AiChatSession {
+  id: number
+  sessionKey: string
+  title: string
+  createTime?: string
+  updateTime?: string
+}
+
+export interface AiChatMessage {
+  id: number
+  role: 'user' | 'assistant'
+  content: string
+  createTime?: string
+}
+
+export interface RagQueryRequest {
+  question: string
+  topK?: number
+}
+
+export interface RagReindexResponse {
+  documentCount: number
+  chunkCount: number
+  message: string
+}
+
+export interface KnowledgeUploadResponse {
+  filename: string
+  sourcePath: string
+  sourceType: string
+  chunkCount: number
+  message: string
+}
+
+export interface KnowledgeDocumentResponse {
+  id: number
+  filename: string
+  sourcePath: string
+  sourceType: string
+  chunkCount: number
+  status: number
+  isSystem?: boolean
+  createTime?: string
+  updateTime?: string
 }

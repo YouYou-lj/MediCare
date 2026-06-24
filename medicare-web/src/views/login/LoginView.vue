@@ -81,6 +81,25 @@
               </template>
             </el-input>
           </el-form-item>
+          <el-form-item prop="captcha">
+            <div class="login-captcha">
+              <div class="login-captcha__challenge" @click="refreshCaptcha">
+                <span>{{ captchaQuestion }}</span>
+                <el-icon><Refresh /></el-icon>
+              </div>
+              <el-input
+                v-model="form.captcha"
+                placeholder="请输入计算结果"
+                size="large"
+                class="login-captcha__input"
+                @keyup.enter="handleLogin"
+              >
+                <template #prefix>
+                  <el-icon><CircleCheck /></el-icon>
+                </template>
+              </el-input>
+            </div>
+          </el-form-item>
           <el-form-item>
             <el-button
               type="primary"
@@ -153,11 +172,37 @@ const shake = ref(false)
 const form = reactive({
   username: '',
   password: '',
+  captcha: '',
 })
+
+const captchaAnswer = ref(0)
+const captchaQuestion = ref('')
+
+function refreshCaptcha() {
+  const first = 3 + Math.floor(Math.random() * 7)
+  const second = 2 + Math.floor(Math.random() * 8)
+  captchaAnswer.value = first + second
+  captchaQuestion.value = `${first} + ${second} = ?`
+  form.captcha = ''
+}
+
+function validateCaptcha(_rule: unknown, value: string, callback: (error?: Error) => void) {
+  if (!value) {
+    callback(new Error('请输入防人机校验结果'))
+    return
+  }
+  if (Number(value) !== captchaAnswer.value) {
+    callback(new Error('校验结果不正确，请重新计算'))
+    refreshCaptcha()
+    return
+  }
+  callback()
+}
 
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: ['blur', 'change'] }],
   password: [{ required: true, message: '请输入密码', trigger: ['blur', 'change'] }],
+  captcha: [{ validator: validateCaptcha, trigger: 'blur' }],
 }
 
 // ===== 小猫咪状态 =====
@@ -206,6 +251,7 @@ function autoMoveCat() {
 }
 
 onMounted(() => {
+  refreshCaptcha()
   // 初始随机位置
   catPosition.value = Math.floor(Math.random() * 3)
   // 自动移动：每 5~8 秒随机移动一次
@@ -408,6 +454,35 @@ async function handleLogin() {
   box-shadow: 0 0 0 1px var(--color-primary) inset, 0 0 0 3px var(--color-primary-light);
 }
 .login-input :deep(.el-input__prefix) {
+  color: var(--text-muted);
+}
+
+.login-captcha {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+.login-captcha__challenge {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-input);
+  color: var(--text-primary);
+  background: var(--bg-toolbar);
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.login-captcha__challenge:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.login-captcha__input :deep(.el-input__prefix) {
   color: var(--text-muted);
 }
 

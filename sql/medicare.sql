@@ -394,7 +394,7 @@ CREATE TABLE `sys_user` (
 -- Records of sys_user
 -- ----------------------------
 BEGIN;
-INSERT INTO `sys_user` (`id`, `username`, `password`, `real_name`, `role`, `status`, `doctor_id`, `create_time`, `update_time`) VALUES (1, 'admin', '$2a$10$fJGYeJJLLTkIa/dEfYBHkuiV0KGwr6x/D1ch26AU7dRhXqcHbqY7.', '老板', 'admin', 1, NULL, '2026-06-10 22:11:24.002', '2026-06-17 16:11:02.309');
+INSERT INTO `sys_user` (`id`, `username`, `password`, `real_name`, `role`, `status`, `doctor_id`, `create_time`, `update_time`) VALUES (1, 'admin', '$2a$10$WONCjn94whlUczwJgKUNJOxai4IiYNoqJZNjNZr94IzVap9hpHYOG', '老板', 'admin', 1, NULL, '2026-06-10 22:11:24.002', '2026-06-17 16:11:02.309');
 INSERT INTO `sys_user` (`id`, `username`, `password`, `real_name`, `role`, `status`, `doctor_id`, `create_time`, `update_time`) VALUES (8, 'admin2', '$2a$10$oXH5bPFAqoexHjj/9q0IZeRmYIIsAu7C/LTPchBH4YBw5Kd05HI3C', '老徐', 'admin', 1, NULL, '2026-06-10 23:03:12.202', '2026-06-17 13:36:47.910');
 COMMIT;
 

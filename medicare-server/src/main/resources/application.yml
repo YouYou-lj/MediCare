@@ -53,5 +53,6 @@ ai:
   provider: ${AI_PROVIDER:bailian}
   api-key: ${AI_API_KEY:}
   model: ${AI_MODEL:deepseek-v4-flash}
+  embedding-model: ${AI_EMBEDDING_MODEL:text-embedding-v4}
   base-url: ${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
   timeout: ${AI_TIMEOUT:20s}

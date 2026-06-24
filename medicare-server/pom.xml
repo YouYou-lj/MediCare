@@ -58,6 +58,23 @@
             <version>2.5.0</version>
         </dependency>
 
+        <!-- Document parsing: PDF / Word / PowerPoint knowledge upload -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.31</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+
         <!-- AOP: Spring AOP + AspectJ（用于 @RequireRole 权限切面） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

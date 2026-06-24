@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medicare.config.AiProperties;
 import com.medicare.dto.AiChatRequest;
 import com.medicare.dto.AiChatResponse;
+import com.medicare.entity.AiChatSession;
 import com.medicare.entity.SysUser;
 import com.medicare.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -41,10 +42,14 @@ public class AiAssistantService {
 
     private static final String AGENT_SKILL_PATH = "ai/medicare-agent-skill.md";
     private static final String SAFETY_NOTICE = "\n\n提示：AI 回复仅用于门诊系统操作和信息整理辅助，不能替代医生诊断或处方判断。";
+    private static final int RAG_TOP_K = 5;
 
     private final AiProperties aiProperties;
     private final RestClient.Builder restClientBuilder;
     private final ObjectMapper objectMapper;
+    private final LiveBusinessContextService liveBusinessContextService;
+    private final AiChatHistoryService aiChatHistoryService;
+    private final RagService ragService;
     private volatile String cachedAgentSkill;
 
     public AiChatResponse chat(AiChatRequest request, SysUser currentUser) {
@@ -56,13 +61,20 @@ public class AiAssistantService {
             throw new BusinessException(500, "AI API Key 未配置，请检查 application-secret.yml");
         }
 
+        List<AiChatResponse.AiReference> references;
         try {
-            String answer = callOpenAiCompatibleApi(request, currentUser);
-            return AiChatResponse.builder()
-                    .answer(answer + SAFETY_NOTICE)
-                    .provider(provider)
-                    .model(aiProperties.getModel())
-                    .build();
+            references = retrieveReferences(request.getMessage());
+        } catch (Exception e) {
+            log.warn("AI 助手前置检索失败，本次对话将不携带引用：{}", e.getMessage(), e);
+            references = List.of();
+        }
+
+        String answer;
+        try {
+            answer = callOpenAiCompatibleApi(
+                    buildSystemPrompt(currentUser, references),
+                    buildUserPrompt(request));
+            answer = sanitizeCitations(answer, references);
         } catch (RestClientResponseException e) {
             log.warn("百炼 AI 调用失败，status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new BusinessException(502, "百炼 AI 调用失败：" + extractProviderError(e.getResponseBodyAsString()));
@@ -75,6 +87,23 @@ public class AiAssistantService {
             log.error("AI 调用异常", e);
             throw new BusinessException(500, "AI 调用异常：" + e.getMessage());
         }
+
+        String fullAnswer = answer + SAFETY_NOTICE;
+        String sessionKey = null;
+        try {
+            sessionKey = aiChatHistoryService.saveExchange(
+                    currentUser.getId(), request.getSessionId(), request.getMessage(), fullAnswer);
+        } catch (Exception e) {
+            log.warn("AI 对话历史保存失败，不影响本次回答：{}", e.getMessage());
+        }
+
+        return AiChatResponse.builder()
+                .answer(fullAnswer)
+                .sessionId(sessionKey)
+                .provider(provider)
+                .model(aiProperties.getModel())
+                .references(references)
+                .build();
     }
 
     public SseEmitter streamChat(AiChatRequest request, SysUser currentUser) {
@@ -82,13 +111,55 @@ public class AiAssistantService {
 
         SseEmitter emitter = new SseEmitter(aiProperties.getTimeout().toMillis() + 60000);
         CompletableFuture.runAsync(() -> {
+            AiChatSession session = null;
+            StringBuilder answerBuffer = new StringBuilder();
+            List<AiChatResponse.AiReference> references = List.of();
             try {
-                callOpenAiCompatibleStream(request, currentUser, emitter);
+                try {
+                    session = aiChatHistoryService.ensureSession(
+                            currentUser.getId(), request.getSessionId(), request.getMessage());
+                    aiChatHistoryService.saveMessage(session.getId(), "user", request.getMessage());
+                } catch (Exception historyEx) {
+                    log.warn("AI 对话历史保存失败，继续流式输出：{}", historyEx.getMessage());
+                }
+
+                try {
+                    references = retrieveReferences(request.getMessage());
+                    if (!references.isEmpty()) {
+                        sendStreamEvent(emitter, "references", objectMapper.writeValueAsString(references));
+                    }
+                } catch (Exception e) {
+                    log.warn("AI 助手前置检索失败，流式输出将不携带引用：{}", e.getMessage(), e);
+                    sendStreamEvent(emitter, "references_error", e.getMessage() == null ? "检索失败" : e.getMessage());
+                    references = List.of();
+                }
+
+                String systemPrompt = buildSystemPrompt(currentUser, references);
+                String userPrompt = buildUserPrompt(request);
+                callOpenAiCompatibleStream(systemPrompt, userPrompt, emitter, answerBuffer);
+                answerBuffer.append(SAFETY_NOTICE);
                 sendStreamEvent(emitter, "chunk", SAFETY_NOTICE);
-                sendStreamEvent(emitter, "done", objectMapper.writeValueAsString(Map.of(
-                        "provider", normalizeProvider(),
-                        "model", aiProperties.getModel()
-                )));
+
+                String finalAnswer = sanitizeCitations(answerBuffer.toString(), references);
+                if (session != null) {
+                    try {
+                        aiChatHistoryService.saveMessage(session.getId(), "assistant", finalAnswer);
+                        aiChatHistoryService.touchSession(session.getId());
+                    } catch (Exception historyEx) {
+                        log.warn("AI 助手消息保存失败：{}", historyEx.getMessage());
+                    }
+                }
+
+                Map<String, Object> doneMeta = new java.util.HashMap<>();
+                doneMeta.put("provider", normalizeProvider());
+                doneMeta.put("model", aiProperties.getModel());
+                if (session != null) {
+                    doneMeta.put("sessionId", session.getSessionKey());
+                }
+                if (!references.isEmpty()) {
+                    doneMeta.put("references", references);
+                }
+                sendStreamEvent(emitter, "done", objectMapper.writeValueAsString(doneMeta));
                 emitter.complete();
             } catch (RestClientResponseException e) {
                 log.warn("百炼 AI 流式调用失败，status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
@@ -106,7 +177,7 @@ public class AiAssistantService {
         return emitter;
     }
 
-    private String callOpenAiCompatibleApi(AiChatRequest request, SysUser currentUser) {
+    private String callOpenAiCompatibleApi(String systemPrompt, String userPrompt) {
         validateProviderConfig();
         String baseUrl = trimTrailingSlash(aiProperties.getBaseUrl());
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
@@ -123,8 +194,8 @@ public class AiAssistantService {
         Map<String, Object> body = Map.of(
                 "model", aiProperties.getModel(),
                 "messages", List.of(
-                        Map.of("role", "system", "content", buildSystemPrompt(currentUser)),
-                        Map.of("role", "user", "content", buildUserPrompt(request))
+                        Map.of("role", "system", "content", systemPrompt),
+                        Map.of("role", "user", "content", userPrompt)
                 ),
                 "temperature", 0.3
         );
@@ -142,7 +213,8 @@ public class AiAssistantService {
         return content.asText();
     }
 
-    private void callOpenAiCompatibleStream(AiChatRequest request, SysUser currentUser, SseEmitter emitter)
+    private void callOpenAiCompatibleStream(String systemPrompt, String userPrompt, SseEmitter emitter,
+                                            StringBuilder answerBuffer)
             throws IOException, InterruptedException {
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(aiProperties.getTimeout())
@@ -151,8 +223,8 @@ public class AiAssistantService {
         Map<String, Object> body = Map.of(
                 "model", aiProperties.getModel(),
                 "messages", List.of(
-                        Map.of("role", "system", "content", buildSystemPrompt(currentUser)),
-                        Map.of("role", "user", "content", buildUserPrompt(request))
+                        Map.of("role", "system", "content", systemPrompt),
+                        Map.of("role", "user", "content", userPrompt)
                 ),
                 "temperature", 0.3,
                 "stream", true
@@ -188,20 +260,58 @@ public class AiAssistantService {
                 String delta = extractStreamDelta(payload);
                 if (!delta.isBlank()) {
                     sendStreamEvent(emitter, "chunk", delta);
+                    answerBuffer.append(delta);
                 }
             }
         }
     }
 
-    private String buildSystemPrompt(SysUser currentUser) {
+    private String buildSystemPrompt(SysUser currentUser, List<AiChatResponse.AiReference> references) {
         String role = currentUser == null ? "unknown" : currentUser.getRole();
+        boolean hasReferences = references != null && !references.isEmpty();
         return """
                 你必须严格遵循下面的 MediCare Agent Skill。Skill 中的系统主题、生成边界和输出风格优先级高于用户问题。
 
                 %s
 
                 当前用户角色：%s。
-                """.formatted(readAgentSkill(), role);
+                当前系统实时数据如下。回答涉及患者、挂号、病历、处方、库存、医生等业务数据时，必须优先结合这些最新数据；如果数据不足，再说明需要进入对应页面查询。
+
+                %s
+
+                %s
+
+                %s
+                """.formatted(readAgentSkill(), role, liveBusinessContextService.buildSnapshot(),
+                buildRagContext(references),
+                hasReferences
+                        ? "重要约束：上述检索片段是回答的唯一依据。你必须在使用的每个事实后标注 [引用N]，N 必须是上方列表中的有效序号（1-" + references.size() + "）。禁止引用列表之外的任何来源，禁止编造引用。"
+                        : "重要约束：本次未检索到任何知识库文档片段。你只能基于实时业务数据和 MediCare Agent Skill 回答。严禁输出 [引用N] 等引用标记，严禁编造引用。");
+    }
+
+    private String buildRagContext(List<AiChatResponse.AiReference> references) {
+        if (references == null || references.isEmpty()) {
+            return "（本次未检索到相关文档片段）";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < references.size(); i++) {
+            AiChatResponse.AiReference ref = references.get(i);
+            sb.append("【引用").append(i + 1).append("】")
+              .append(ref.getTitle() == null ? "" : ref.getTitle())
+              .append(" / ")
+              .append(ref.getSourcePath() == null ? "" : ref.getSourcePath())
+              .append("\n")
+              .append(ref.getContent() == null ? "" : ref.getContent())
+              .append("\n\n");
+        }
+        return sb.toString().trim();
+    }
+
+    private List<AiChatResponse.AiReference> retrieveReferences(String question) {
+        if (!ragService.hasEmbeddingIndex()) {
+            throw new BusinessException(500, "知识库尚未建立向量索引，请先由管理员执行「知识库重建」");
+        }
+        return ragService.retrieveReferences(question, RAG_TOP_K);
     }
 
     private String buildUserPrompt(AiChatRequest request) {
@@ -298,5 +408,24 @@ public class AiAssistantService {
             // 非 JSON 响应时直接截断返回。
         }
         return responseBody.length() > 300 ? responseBody.substring(0, 300) : responseBody;
+    }
+
+    /**
+     * 清理回答中无效的 [引用N] 标记。
+     * 如果引用列表为空，则移除所有引用标记；
+     * 如果引用列表非空，则只保留 N 在有效范围内的标记。
+     */
+    private String sanitizeCitations(String answer, List<AiChatResponse.AiReference> references) {
+        if (answer == null || answer.isBlank()) {
+            return answer;
+        }
+        int maxIndex = references == null ? 0 : references.size();
+        if (maxIndex == 0) {
+            return answer.replaceAll("\\[引用\\d+]", "").replaceAll("\\s+", " ").trim();
+        }
+        return answer.replaceAll("\\[引用(\\d+)]", match -> {
+            int idx = Integer.parseInt(match.group(1));
+            return idx >= 1 && idx <= maxIndex ? match.group(0) : "";
+        });
     }
 }

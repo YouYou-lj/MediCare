@@ -272,9 +272,10 @@ onMounted(() => {
 }
 .action-buttons {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
-  gap: 4px;
+  gap: 0;
+  white-space: nowrap;
 }
 </style>
