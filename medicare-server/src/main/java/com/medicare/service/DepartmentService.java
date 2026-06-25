@@ -3,6 +3,7 @@ package com.medicare.service;
 import com.medicare.entity.Department;
 import com.medicare.exception.BusinessException;
 import com.medicare.repository.DepartmentRepository;
+import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +31,8 @@ public class DepartmentService {
         if (departmentRepository.existsByName(dept.getName())) {
             throw new BusinessException("科室名称已存在");
         }
+        dept = departmentRepository.save(dept);
+        dept.setCode(CodeUtils.generateCode("DEP", dept.getId()));
         return departmentRepository.save(dept);
     }
 

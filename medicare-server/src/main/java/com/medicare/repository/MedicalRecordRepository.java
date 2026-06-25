@@ -11,6 +11,8 @@ import java.util.Optional;
 
 public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, Long> {
 
+    long countByPatientId(Long patientId);
+
     Optional<MedicalRecord> findByRegistrationId(Long registrationId);
 
     List<MedicalRecord> findByPatientIdOrderByCreateTimeDesc(Long patientId);
@@ -18,7 +20,7 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, Lo
     /**
      * 查询病历列表（带患者+医生名称）
      */
-    @Query(value = "SELECT mr.id, mr.registration_id AS registrationId, mr.patient_id AS patientId, "
+    @Query(value = "SELECT mr.id, mr.code, mr.registration_id AS registrationId, mr.patient_id AS patientId, "
             + "mr.doctor_id AS doctorId, mr.chief_complaint AS chiefComplaint, mr.present_illness AS presentIllness, "
             + "mr.past_history AS pastHistory, mr.physical_exam AS physicalExam, mr.diagnosis, mr.advice, "
             + "mr.create_time AS createTime, "
@@ -35,7 +37,7 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, Lo
     /**
      * 按挂号ID查询病历详情
      */
-    @Query(value = "SELECT mr.id, mr.registration_id AS registrationId, mr.patient_id AS patientId, "
+    @Query(value = "SELECT mr.id, mr.code, mr.registration_id AS registrationId, mr.patient_id AS patientId, "
             + "mr.doctor_id AS doctorId, mr.chief_complaint AS chiefComplaint, mr.present_illness AS presentIllness, "
             + "mr.past_history AS pastHistory, mr.physical_exam AS physicalExam, mr.diagnosis, mr.advice, "
             + "mr.create_time AS createTime, "
@@ -50,7 +52,7 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, Lo
     /**
      * 按ID查询病历详情（带患者+医生名称）
      */
-    @Query(value = "SELECT mr.id, mr.registration_id AS registrationId, mr.patient_id AS patientId, "
+    @Query(value = "SELECT mr.id, mr.code, mr.registration_id AS registrationId, mr.patient_id AS patientId, "
             + "mr.doctor_id AS doctorId, mr.chief_complaint AS chiefComplaint, mr.present_illness AS presentIllness, "
             + "mr.past_history AS pastHistory, mr.physical_exam AS physicalExam, mr.diagnosis, mr.advice, "
             + "mr.create_time AS createTime, "

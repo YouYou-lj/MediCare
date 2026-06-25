@@ -17,6 +17,9 @@ public class PrescriptionItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(length = 32, unique = true)
+    private String code;
+
     @Column(name = "prescription_id", nullable = false)
     private Long prescriptionId;
 

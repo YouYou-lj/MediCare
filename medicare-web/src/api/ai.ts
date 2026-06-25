@@ -18,7 +18,9 @@ export function deleteChatSession(sessionId: number) {
 }
 
 export function createRagReindex() {
-  return request.post<any, Result<RagReindexResponse>>('/ai/rag/reindex')
+  return request.post<any, Result<RagReindexResponse>>('/ai/rag/reindex', undefined, {
+    timeout: 300000
+  })
 }
 
 export function createRagQuery(data: RagQueryRequest) {
@@ -70,6 +72,12 @@ async function readErrorMessage(response: Response) {
     const result = await response.json()
     return result?.message || 'AI 调用失败'
   } catch {
+    if (response.status === 401) {
+      return '登录已过期，请重新登录'
+    }
+    if (response.status === 403) {
+      return '权限不足，当前账号无法使用该功能或访问该会话'
+    }
     if (response.status === 500) {
       return '后端 AI 服务异常，请确认已启动最新后端并加载 application-secret.yml'
     }

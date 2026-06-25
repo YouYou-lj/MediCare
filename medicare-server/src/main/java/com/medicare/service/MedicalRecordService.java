@@ -4,6 +4,7 @@ import com.medicare.dto.MedicalRecordVO;
 import com.medicare.entity.MedicalRecord;
 import com.medicare.exception.BusinessException;
 import com.medicare.repository.MedicalRecordRepository;
+import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -49,6 +50,8 @@ public class MedicalRecordService {
         if (medicalRecordRepository.findByRegistrationId(record.getRegistrationId()).isPresent()) {
             throw new BusinessException("该挂号已有病历记录");
         }
+        record = medicalRecordRepository.save(record);
+        record.setCode(CodeUtils.generateCode("REC", record.getId()));
         return medicalRecordRepository.save(record);
     }
 

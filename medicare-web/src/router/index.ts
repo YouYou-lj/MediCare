@@ -87,7 +87,7 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   document.title = `${to.meta.title || 'MediCare'} - 智慧医疗`
 
   if (to.meta.requiresAuth !== false) {
@@ -95,6 +95,7 @@ router.beforeEach((to, _from, next) => {
     if (!userStore.isLoggedIn) {
       userStore.loadFromStorage()
     }
+    await userStore.syncFromServer()
     if (!userStore.isLoggedIn) {
       next('/login')
       return

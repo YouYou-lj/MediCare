@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
  */
 public interface InventoryLogVO {
     Long getId();
+    String getCode();
     Long getMedicineId();
     Integer getType();
     Integer getQuantity();

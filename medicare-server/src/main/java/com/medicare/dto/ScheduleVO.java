@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
  */
 public interface ScheduleVO {
     Long getId();
+    String getCode();
     Long getDoctorId();
     LocalDate getWorkDate();
     String getTimeSlot();

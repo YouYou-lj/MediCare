@@ -5,6 +5,7 @@ import com.medicare.entity.Medicine;
 import com.medicare.exception.BusinessException;
 import com.medicare.repository.InventoryLogRepository;
 import com.medicare.repository.MedicineRepository;
+import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,8 @@ public class MedicineService {
         if (medicineRepository.existsByNameAndSpec(medicine.getName(), medicine.getSpec())) {
             throw new BusinessException("该药品规格已存在");
         }
+        medicine = medicineRepository.save(medicine);
+        medicine.setCode(CodeUtils.generateCode("MED", medicine.getId()));
         return medicineRepository.save(medicine);
     }
 
@@ -85,6 +88,8 @@ public class MedicineService {
         }
         log.setOperator(operator);
         log.setRemark(remark);
+        log = inventoryLogRepository.save(log);
+        log.setCode(CodeUtils.generateCode("INV", log.getId()));
         inventoryLogRepository.save(log);
     }
 
@@ -108,6 +113,8 @@ public class MedicineService {
         }
         log.setOperator(operator);
         log.setRemark(remark);
+        log = inventoryLogRepository.save(log);
+        log.setCode(CodeUtils.generateCode("INV", log.getId()));
         inventoryLogRepository.save(log);
     }
 

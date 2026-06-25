@@ -29,6 +29,11 @@ out/
 logs/
 *.log
 
+# Runtime PID files
+*.pid
+server.pid
+frontend.pid
+
 # OS
 .DS_Store
 Thumbs.db
@@ -54,6 +59,10 @@ medicare-web/dist/
 # Local AI secrets
 application-secret.yml
 medicare-server/application-secret.yml
+
+# Uploaded system files (generated at runtime)
+system-uploads/
+systemRAGFiles/
 
 # Project documents not for repository push
 DOC/

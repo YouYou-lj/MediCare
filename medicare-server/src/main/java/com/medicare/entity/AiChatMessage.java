@@ -26,6 +26,9 @@ public class AiChatMessage {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "references_json", columnDefinition = "LONGTEXT")
+    private String referencesJson;
+
     @Column(name = "create_time", updatable = false, insertable = false)
     private LocalDateTime createTime;
 }

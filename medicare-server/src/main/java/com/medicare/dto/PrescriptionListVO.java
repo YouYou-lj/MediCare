@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
  */
 public interface PrescriptionListVO {
     Long getId();
+    String getCode();
     Long getRecordId();
     Long getPatientId();
     Long getDoctorId();

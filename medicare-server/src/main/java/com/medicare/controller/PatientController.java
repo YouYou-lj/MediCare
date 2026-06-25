@@ -71,4 +71,12 @@ public class PatientController {
         patientService.delete(id);
         return Result.ok();
     }
+
+    @DeleteMapping("/{id}/with-related")
+    @RequireRole("admin")
+    @Operation(summary = "清理关联业务数据并删除患者")
+    public Result<Void> deleteWithRelated(@PathVariable Long id) {
+        patientService.deleteWithRelated(id);
+        return Result.ok();
+    }
 }

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
  */
 public interface MedicalRecordVO {
     Long getId();
+    String getCode();
     Long getRegistrationId();
     Long getPatientId();
     Long getDoctorId();

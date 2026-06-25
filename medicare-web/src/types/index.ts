@@ -8,6 +8,7 @@ export interface Result<T> {
 // ========== 用户与认证 ==========
 export interface SysUser {
   id: number
+  code?: string
   username: string
   password?: string
   realName: string
@@ -31,6 +32,7 @@ export interface LoginResponse {
 // ========== 科室 ==========
 export interface Department {
   id?: number
+  code?: string
   name: string
   location?: string
   phone?: string
@@ -41,6 +43,7 @@ export interface Department {
 // ========== 医生 ==========
 export interface Doctor {
   id?: number
+  code?: string
   name: string
   departmentId: number
   title?: string
@@ -53,10 +56,11 @@ export interface Doctor {
 // ========== 患者 ==========
 export interface Patient {
   id?: number
+  code?: string
   idCard: string
   name: string
   gender: number
-  birthDate?: string
+  birthDate?: string | null
   phone?: string
   address?: string
   allergyInfo?: string
@@ -67,6 +71,7 @@ export interface Patient {
 // ========== 排班 ==========
 export interface Schedule {
   id?: number
+  code?: string
   doctorId: number
   workDate: string
   timeSlot: string
@@ -81,6 +86,7 @@ export interface Schedule {
 // ========== 挂号 ==========
 export interface Registration {
   id?: number
+  code?: string
   patientId: number
   scheduleId: number
   doctorId?: number
@@ -99,6 +105,7 @@ export interface Registration {
 // ========== 病历 ==========
 export interface MedicalRecord {
   id?: number
+  code?: string
   registrationId: number
   patientId: number
   doctorId: number
@@ -117,6 +124,7 @@ export interface MedicalRecord {
 // ========== 药品 ==========
 export interface Medicine {
   id?: number
+  code?: string
   name: string
   spec?: string
   unit?: string
@@ -135,6 +143,7 @@ export interface Medicine {
 // ========== 处方 ==========
 export interface Prescription {
   id?: number
+  code?: string
   recordId: number
   patientId: number
   doctorId: number
@@ -149,6 +158,7 @@ export interface Prescription {
 
 export interface PrescriptionItem {
   id?: number
+  code?: string
   prescriptionId?: number
   medicineId: number
   quantity: number
@@ -159,6 +169,7 @@ export interface PrescriptionItem {
   medicineName?: string
   medicineSpec?: string
   medicineUnit?: string
+  medicineCode?: string
 }
 
 // ========== 库存日志 ==========
@@ -202,6 +213,7 @@ export interface AiChatRequest {
   message: string
   sessionId?: string
   context?: AiChatContext
+  fileSourcePath?: string
 }
 
 export interface AiReference {
@@ -239,6 +251,7 @@ export interface AiChatMessage {
   id: number
   role: 'user' | 'assistant'
   content: string
+  references?: AiReference[]
   createTime?: string
 }
 
@@ -259,6 +272,15 @@ export interface KnowledgeUploadResponse {
   sourceType: string
   chunkCount: number
   message: string
+}
+
+export interface KnowledgeSystemUploadBatchResponse {
+  totalCount: number
+  successCount: number
+  failCount: number
+  totalChunkCount: number
+  message: string
+  files: KnowledgeUploadResponse[]
 }
 
 export interface KnowledgeDocumentResponse {

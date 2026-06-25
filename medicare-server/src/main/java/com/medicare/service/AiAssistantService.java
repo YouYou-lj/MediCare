@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medicare.config.AiProperties;
+import com.medicare.config.AiTaskExecutorConfig.AiTaskExecutors;
 import com.medicare.dto.AiChatRequest;
 import com.medicare.dto.AiChatResponse;
 import com.medicare.entity.AiChatSession;
@@ -34,6 +35,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -41,8 +44,9 @@ import java.util.concurrent.CompletableFuture;
 public class AiAssistantService {
 
     private static final String AGENT_SKILL_PATH = "ai/medicare-agent-skill.md";
-    private static final String SAFETY_NOTICE = "\n\n提示：AI 回复仅用于门诊系统操作和信息整理辅助，不能替代医生诊断或处方判断。";
+    private static final String SAFETY_NOTICE = "\n\n---\n\n> **提示：AI 回复仅用于门诊系统操作和信息整理辅助，不能替代医生诊断或处方判断。**";
     private static final int RAG_TOP_K = 5;
+    private static final Pattern CITATION_PATTERN = Pattern.compile("\\[引用(\\d+)]");
 
     private final AiProperties aiProperties;
     private final RestClient.Builder restClientBuilder;
@@ -50,6 +54,7 @@ public class AiAssistantService {
     private final LiveBusinessContextService liveBusinessContextService;
     private final AiChatHistoryService aiChatHistoryService;
     private final RagService ragService;
+    private final AiTaskExecutors aiTaskExecutors;
     private volatile String cachedAgentSkill;
 
     public AiChatResponse chat(AiChatRequest request, SysUser currentUser) {
@@ -63,7 +68,7 @@ public class AiAssistantService {
 
         List<AiChatResponse.AiReference> references;
         try {
-            references = retrieveReferences(request.getMessage());
+            references = retrieveReferences(request.getMessage(), request.getFileSourcePath());
         } catch (Exception e) {
             log.warn("AI 助手前置检索失败，本次对话将不携带引用：{}", e.getMessage(), e);
             references = List.of();
@@ -71,7 +76,7 @@ public class AiAssistantService {
 
         String answer;
         try {
-            answer = callOpenAiCompatibleApi(
+            answer = callOpenAiCompatibleApiAsync(
                     buildSystemPrompt(currentUser, references),
                     buildUserPrompt(request));
             answer = sanitizeCitations(answer, references);
@@ -92,7 +97,7 @@ public class AiAssistantService {
         String sessionKey = null;
         try {
             sessionKey = aiChatHistoryService.saveExchange(
-                    currentUser.getId(), request.getSessionId(), request.getMessage(), fullAnswer);
+                    currentUser.getId(), request.getSessionId(), request.getMessage(), fullAnswer, references);
         } catch (Exception e) {
             log.warn("AI 对话历史保存失败，不影响本次回答：{}", e.getMessage());
         }
@@ -124,15 +129,14 @@ public class AiAssistantService {
                 }
 
                 try {
-                    references = retrieveReferences(request.getMessage());
-                    if (!references.isEmpty()) {
-                        sendStreamEvent(emitter, "references", objectMapper.writeValueAsString(references));
-                    }
+                    references = retrieveReferences(request.getMessage(), request.getFileSourcePath());
                 } catch (Exception e) {
                     log.warn("AI 助手前置检索失败，流式输出将不携带引用：{}", e.getMessage(), e);
                     sendStreamEvent(emitter, "references_error", e.getMessage() == null ? "检索失败" : e.getMessage());
                     references = List.of();
                 }
+                // 始终发送 references 事件，让前端区分"检索为空"与"检索失败"
+                sendStreamEvent(emitter, "references", objectMapper.writeValueAsString(references));
 
                 String systemPrompt = buildSystemPrompt(currentUser, references);
                 String userPrompt = buildUserPrompt(request);
@@ -143,7 +147,7 @@ public class AiAssistantService {
                 String finalAnswer = sanitizeCitations(answerBuffer.toString(), references);
                 if (session != null) {
                     try {
-                        aiChatHistoryService.saveMessage(session.getId(), "assistant", finalAnswer);
+                        aiChatHistoryService.saveMessage(session.getId(), "assistant", finalAnswer, references);
                         aiChatHistoryService.touchSession(session.getId());
                     } catch (Exception historyEx) {
                         log.warn("AI 助手消息保存失败：{}", historyEx.getMessage());
@@ -173,8 +177,27 @@ public class AiAssistantService {
                 log.error("AI 流式调用异常", e);
                 completeStreamWithError(emitter, "AI 调用异常：" + e.getMessage());
             }
-        });
+        }, aiTaskExecutors.generationExecutor());
         return emitter;
+    }
+
+    private String callOpenAiCompatibleApiAsync(String systemPrompt, String userPrompt) {
+        try {
+            return CompletableFuture.supplyAsync(
+                    () -> callOpenAiCompatibleApi(systemPrompt, userPrompt),
+                    aiTaskExecutors.generationExecutor()
+            ).join();
+        } catch (CompletionException e) {
+            throw unwrapCompletionException(e);
+        }
+    }
+
+    private RuntimeException unwrapCompletionException(CompletionException e) {
+        Throwable cause = e.getCause() == null ? e : e.getCause();
+        if (cause instanceof RuntimeException runtimeException) {
+            return runtimeException;
+        }
+        return new BusinessException(500, "AI 异步任务异常：" + cause.getMessage());
     }
 
     private String callOpenAiCompatibleApi(String systemPrompt, String userPrompt) {
@@ -307,11 +330,11 @@ public class AiAssistantService {
         return sb.toString().trim();
     }
 
-    private List<AiChatResponse.AiReference> retrieveReferences(String question) {
+    private List<AiChatResponse.AiReference> retrieveReferences(String question, String fileSourcePath) {
         if (!ragService.hasEmbeddingIndex()) {
             throw new BusinessException(500, "知识库尚未建立向量索引，请先由管理员执行「知识库重建」");
         }
-        return ragService.retrieveReferences(question, RAG_TOP_K);
+        return ragService.retrieveReferences(question, fileSourcePath, RAG_TOP_K);
     }
 
     private String buildUserPrompt(AiChatRequest request) {
@@ -423,7 +446,7 @@ public class AiAssistantService {
         if (maxIndex == 0) {
             return answer.replaceAll("\\[引用\\d+]", "").replaceAll("\\s+", " ").trim();
         }
-        return answer.replaceAll("\\[引用(\\d+)]", match -> {
+        return CITATION_PATTERN.matcher(answer).replaceAll(match -> {
             int idx = Integer.parseInt(match.group(1));
             return idx >= 1 && idx <= maxIndex ? match.group(0) : "";
         });

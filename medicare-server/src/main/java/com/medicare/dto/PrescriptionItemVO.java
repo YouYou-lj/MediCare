@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 public class PrescriptionItemVO {
 
     private Long id;
+    private String code;
     private Long prescriptionId;
     private Long medicineId;
     private Integer quantity;
@@ -22,4 +23,5 @@ public class PrescriptionItemVO {
     private String medicineName;
     private String medicineSpec;
     private String medicineUnit;
+    private String medicineCode;
 }

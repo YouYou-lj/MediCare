@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS `ai_chat_message` (
   `session_id` bigint unsigned NOT NULL COMMENT '所属会话ID',
   `role` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '消息角色：user / assistant',
   `content` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '消息内容',
+  `references_json` longtext COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'AI 回复引用来源JSON',
   `create_time` datetime(3) DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_ai_msg_session` (`session_id`, `create_time`)

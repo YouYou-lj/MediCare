@@ -2,98 +2,119 @@
   <div class="basic-data">
     <PageHeader title="基础数据管理" subtitle="科室、医生与排班信息维护" />
 
-    <el-card shadow="hover" class="data-card">
-      <el-tabs v-model="activeTab" type="border-card">
+    <el-card shadow="hover" class="basic-data__card">
+      <el-tabs v-model="activeTab" type="border-card" class="basic-data__tabs">
         <el-tab-pane label="科室管理" name="dept">
-          <DataToolbar show-add add-label="新增科室" @add="openDeptDialog()">
-            <template #filters>
-              <el-input v-model="deptKeyword" placeholder="搜索科室名称" clearable style="width:200px" @input="filterDepts" />
-            </template>
-          </DataToolbar>
-          <el-table v-loading="deptLoading" :data="filteredDeptList" stripe border>
-            <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column prop="name" label="科室名称" />
-            <el-table-column prop="location" label="位置" />
-            <el-table-column prop="phone" label="电话" />
-            <el-table-column label="操作" width="160" align="center" fixed="right">
-              <template #default="{ row }">
-                <div class="action-buttons">
-                  <el-button size="small" type="primary" @click="openDeptDialog(row)">编辑</el-button>
-                  <el-popconfirm title="确定删除该科室? 关联医生和排班将失效" @confirm="handleDeleteDept(row.id)">
-                    <template #reference><el-button size="small" type="danger">删除</el-button></template>
-                  </el-popconfirm>
-                </div>
+          <div class="basic-data__pane">
+            <DataToolbar show-refresh show-add add-label="新增科室" @refresh="loadDepts" @add="openDeptDialog()">
+              <template #filters>
+                <el-input v-model="deptKeyword" placeholder="搜索科室名称" clearable class="basic-data__filter-input" @input="filterDepts" />
               </template>
-            </el-table-column>
-          </el-table>
-          <EmptyState v-if="!deptLoading && filteredDeptList.length === 0" icon="OfficeBuilding" title="暂无科室数据" description="点击右上角“新增科室”按钮添加" />
+            </DataToolbar>
+            <div class="basic-data__table-wrap">
+              <el-table v-loading="deptLoading" :data="filteredDeptList" stripe border height="100%" :default-sort="{ prop: 'code', order: 'ascending' }">
+                <template #empty>
+                  <EmptyState icon="OfficeBuilding" title="暂无科室数据" description="点击右上角“新增科室”按钮添加" />
+                </template>
+                <el-table-column type="index" label="序号" width="60" align="center" />
+                <el-table-column prop="code" label="ID" width="120" align="center" fixed="left" />
+                <el-table-column prop="name" label="科室名称" min-width="150" fixed="left" />
+                <el-table-column prop="location" label="位置" min-width="180" />
+                <el-table-column prop="phone" label="电话" min-width="140" />
+                <el-table-column label="操作" width="160" align="center" fixed="right">
+                  <template #default="{ row }">
+                    <div class="basic-data__actions">
+                      <el-button size="small" type="primary" @click="openDeptDialog(row)">编辑</el-button>
+                      <el-popconfirm title="确定删除该科室? 关联医生和排班将失效" @confirm="handleDeleteDept(row.id)">
+                        <template #reference><el-button size="small" type="danger">删除</el-button></template>
+                      </el-popconfirm>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
         </el-tab-pane>
 
         <el-tab-pane label="医生管理" name="doctor">
-          <DataToolbar show-add add-label="新增医生" @add="openDoctorDialog()">
-            <template #filters>
-              <el-select v-model="deptFilter" placeholder="筛选科室" clearable style="width:180px" @change="loadDoctors">
-                <el-option v-for="d in deptList" :key="d.id" :label="d.name" :value="d.id" />
-              </el-select>
-            </template>
-          </DataToolbar>
-          <el-table v-loading="doctorLoading" :data="doctorList" stripe border>
-            <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column prop="name" label="姓名" width="100" />
-            <el-table-column prop="departmentName" label="科室" width="100" />
-            <el-table-column prop="title" label="职称" width="120" />
-            <el-table-column prop="status" label="状态" width="80">
-              <template #default="{ row }">
-                <StatusTag :type="row.status === 1 ? 'success' : 'danger'" :label="row.status === 1 ? '在职' : '停用'" />
+          <div class="basic-data__pane">
+            <DataToolbar show-refresh show-add add-label="新增医生" @refresh="loadDoctors" @add="openDoctorDialog()">
+              <template #filters>
+                <el-select v-model="deptFilter" placeholder="筛选科室" clearable class="basic-data__filter-select" @change="loadDoctors">
+                  <el-option v-for="d in deptList" :key="d.id" :label="d.name" :value="d.id" />
+                </el-select>
               </template>
-            </el-table-column>
-            <el-table-column label="操作" width="160" align="center" fixed="right">
-              <template #default="{ row }">
-                <div class="action-buttons">
-                  <el-button size="small" type="primary" @click="openDoctorDialog(row)">编辑</el-button>
-                  <el-popconfirm title="确定删除该医生? 关联排班将失效" @confirm="handleDeleteDoctor(row.id)">
-                    <template #reference><el-button size="small" type="danger">删除</el-button></template>
-                  </el-popconfirm>
-                </div>
-              </template>
-            </el-table-column>
-          </el-table>
-          <EmptyState v-if="!doctorLoading && doctorList.length === 0" icon="FirstAidKit" title="暂无医生数据" description="点击右上角“新增医生”按钮添加" />
+            </DataToolbar>
+            <div class="basic-data__table-wrap">
+              <el-table v-loading="doctorLoading" :data="doctorList" stripe border height="100%" :default-sort="{ prop: 'code', order: 'ascending' }">
+                <template #empty>
+                  <EmptyState icon="FirstAidKit" title="暂无医生数据" description="点击右上角“新增医生”按钮添加" />
+                </template>
+                <el-table-column type="index" label="序号" width="60" align="center" />
+                <el-table-column prop="code" label="ID" width="120" align="center" fixed="left" />
+                <el-table-column prop="name" label="姓名" min-width="120" fixed="left" />
+                <el-table-column prop="departmentName" label="科室" min-width="130" />
+                <el-table-column prop="title" label="职称" min-width="140" />
+                <el-table-column prop="status" label="状态" min-width="110" align="center">
+                  <template #default="{ row }">
+                    <StatusTag :type="row.status === 1 ? 'success' : 'danger'" :label="row.status === 1 ? '在职' : '停用'" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="160" align="center" fixed="right">
+                  <template #default="{ row }">
+                    <div class="basic-data__actions">
+                      <el-button size="small" type="primary" @click="openDoctorDialog(row)">编辑</el-button>
+                      <el-popconfirm title="确定删除该医生? 关联排班将失效" @confirm="handleDeleteDoctor(row.id)">
+                        <template #reference><el-button size="small" type="danger">删除</el-button></template>
+                      </el-popconfirm>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
         </el-tab-pane>
 
         <el-tab-pane label="排班管理" name="schedule">
-          <DataToolbar show-add add-label="新增排班" @add="openSchedDialog()">
-            <template #filters>
-              <el-date-picker v-model="schedDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" @change="loadSchedules" />
-              <el-select v-model="schedDeptFilter" placeholder="筛选科室" clearable style="width:180px" @change="loadSchedules">
-                <el-option v-for="d in deptList" :key="d.id" :label="d.name" :value="d.id" />
-              </el-select>
-            </template>
-          </DataToolbar>
-          <el-table v-loading="schedLoading" :data="schedList" stripe border>
-            <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column prop="doctorName" label="医生" width="100" />
-            <el-table-column prop="departmentName" label="科室" width="100" />
-            <el-table-column prop="workDate" label="日期" width="120" />
-            <el-table-column prop="timeSlot" label="时段" width="80" />
-            <el-table-column prop="totalSlots" label="总号源" width="80" />
-            <el-table-column prop="remainSlots" label="剩余" width="80">
-              <template #default="{ row }">
-                <StatusTag :type="row.remainSlots > 0 ? 'success' : 'danger'" :label="String(row.remainSlots)" />
+          <div class="basic-data__pane">
+            <DataToolbar show-refresh show-add add-label="新增排班" @refresh="loadSchedules" @add="openSchedDialog()">
+              <template #filters>
+                <el-date-picker v-model="schedDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" class="basic-data__filter-date" @change="loadSchedules" />
+                <el-select v-model="schedDeptFilter" placeholder="筛选科室" clearable class="basic-data__filter-select" @change="loadSchedules">
+                  <el-option v-for="d in deptList" :key="d.id" :label="d.name" :value="d.id" />
+                </el-select>
               </template>
-            </el-table-column>
-            <el-table-column label="操作" width="160" align="center" fixed="right">
-              <template #default="{ row }">
-                <div class="action-buttons">
-                  <el-button size="small" type="primary" @click="openSchedDialog(row)">编辑</el-button>
-                  <el-popconfirm title="确定删除该排班?" @confirm="handleDeleteSched(row.id)">
-                    <template #reference><el-button size="small" type="danger">删除</el-button></template>
-                  </el-popconfirm>
-                </div>
-              </template>
-            </el-table-column>
-          </el-table>
-          <EmptyState v-if="!schedLoading && schedList.length === 0" icon="Calendar" title="暂无排班数据" description="点击右上角“新增排班”按钮添加" />
+            </DataToolbar>
+            <div class="basic-data__table-wrap">
+              <el-table v-loading="schedLoading" :data="schedList" stripe border height="100%" :default-sort="{ prop: 'code', order: 'ascending' }">
+                <template #empty>
+                  <EmptyState icon="Calendar" title="暂无排班数据" description="点击右上角“新增排班”按钮添加" />
+                </template>
+                <el-table-column type="index" label="序号" width="60" align="center" />
+                <el-table-column prop="code" label="ID" width="120" align="center" fixed="left" />
+                <el-table-column prop="doctorName" label="医生" min-width="120" fixed="left" />
+                <el-table-column prop="departmentName" label="科室" min-width="130" />
+                <el-table-column prop="workDate" label="日期" min-width="130" />
+                <el-table-column prop="timeSlot" label="时段" min-width="100" />
+                <el-table-column prop="totalSlots" label="总号源" min-width="100" />
+                <el-table-column prop="remainSlots" label="剩余号源" min-width="110">
+                  <template #default="{ row }">
+                    <StatusTag :type="row.remainSlots > 0 ? 'success' : 'danger'" :label="String(row.remainSlots)" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="160" align="center" fixed="right">
+                  <template #default="{ row }">
+                    <div class="basic-data__actions">
+                      <el-button size="small" type="primary" @click="openSchedDialog(row)">编辑</el-button>
+                      <el-popconfirm title="确定删除该排班?" @confirm="handleDeleteSched(row.id)">
+                        <template #reference><el-button size="small" type="danger">删除</el-button></template>
+                      </el-popconfirm>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
         </el-tab-pane>
       </el-tabs>
 
@@ -115,7 +136,7 @@
         <el-form ref="doctorFormRef" :model="doctorForm" :rules="doctorRules" label-width="80px">
           <el-form-item label="姓名" prop="name"><el-input v-model="doctorForm.name" /></el-form-item>
           <el-form-item label="科室" prop="departmentId">
-            <el-select v-model="doctorForm.departmentId" style="width:100%"><el-option v-for="d in deptList" :key="d.id" :label="d.name" :value="d.id" /></el-select>
+            <el-select v-model="doctorForm.departmentId" class="basic-data__form-control"><el-option v-for="d in deptList" :key="d.id" :label="d.name" :value="d.id" /></el-select>
           </el-form-item>
           <el-form-item label="职称"><el-input v-model="doctorForm.title" /></el-form-item>
           <el-form-item label="状态">
@@ -132,11 +153,11 @@
       <el-dialog v-model="schedDialogVisible" :title="schedIsEdit ? '编辑排班' : '新增排班'" width="500px" destroy-on-close>
         <el-form ref="schedFormRef" :model="schedForm" :rules="schedRules" label-width="80px">
           <el-form-item label="医生" prop="doctorId">
-            <el-select v-model="schedForm.doctorId" style="width:100%"><el-option v-for="d in doctorList" :key="d.id" :label="`${d.name} (${d.departmentName})`" :value="d.id" /></el-select>
+            <el-select v-model="schedForm.doctorId" class="basic-data__form-control"><el-option v-for="d in doctorList" :key="d.id" :label="`${d.name} (${d.departmentName})`" :value="d.id" /></el-select>
           </el-form-item>
-          <el-form-item label="日期" prop="workDate"><el-date-picker v-model="schedForm.workDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
+          <el-form-item label="日期" prop="workDate"><el-date-picker v-model="schedForm.workDate" type="date" value-format="YYYY-MM-DD" class="basic-data__form-control" /></el-form-item>
           <el-form-item label="时段" prop="timeSlot">
-            <el-select v-model="schedForm.timeSlot" style="width:100%"><el-option label="上午" value="上午" /><el-option label="下午" value="下午" /><el-option label="晚上" value="晚上" /></el-select>
+            <el-select v-model="schedForm.timeSlot" class="basic-data__form-control"><el-option label="上午" value="上午" /><el-option label="下午" value="下午" /><el-option label="晚上" value="晚上" /></el-select>
           </el-form-item>
           <el-form-item label="总号源" prop="totalSlots"><el-input-number v-model="schedForm.totalSlots" :min="1" /></el-form-item>
           <el-form-item label="剩余号源" prop="remainSlots"><el-input-number v-model="schedForm.remainSlots" :min="0" /></el-form-item>
@@ -186,7 +207,7 @@ function filterDepts() {}
 
 async function loadDepts() {
   deptLoading.value = true
-  try { const r = await listDepartments(); deptList.value = r.data } catch {}
+  try { const r = await listDepartments(); deptList.value = (r.data || []).sort((a, b) => (a.id ?? 0) - (b.id ?? 0)) } catch {}
   deptLoading.value = false
 }
 function openDeptDialog(row?: Department) { deptIsEdit.value = !!row; Object.assign(deptForm, row ? { ...row } : { name: '', location: '', phone: '' }); deptDialogVisible.value = true }
@@ -211,7 +232,7 @@ const doctorRules = { name: [{ required: true, message: '请输入姓名', trigg
 
 async function loadDoctors() {
   doctorLoading.value = true
-  try { const r = await listDoctors(deptFilter.value); doctorList.value = r.data } catch {}
+  try { const r = await listDoctors(deptFilter.value); doctorList.value = (r.data || []).sort((a, b) => (a.id ?? 0) - (b.id ?? 0)) } catch {}
   doctorLoading.value = false
 }
 function openDoctorDialog(row?: Doctor) { doctorIsEdit.value = !!row; Object.assign(doctorForm, row ? { ...row } : { name: '', departmentId: 1, title: '', status: 1 }); doctorDialogVisible.value = true }
@@ -237,7 +258,7 @@ const schedRules = { doctorId: [{ required: true, message: '请选择医生', tr
 
 async function loadSchedules() {
   schedLoading.value = true
-  try { const r = await listSchedules(schedDate.value, schedDeptFilter.value); schedList.value = r.data } catch {}
+  try { const r = await listSchedules(schedDate.value, schedDeptFilter.value); schedList.value = (r.data || []).sort((a, b) => (a.id ?? 0) - (b.id ?? 0)) } catch {}
   schedLoading.value = false
 }
 function openSchedDialog(row?: Schedule) { schedIsEdit.value = !!row; Object.assign(schedForm, row ? { ...row } : { doctorId: 1, workDate: '', timeSlot: '上午', totalSlots: 20, remainSlots: 20 }); schedDialogVisible.value = true }
@@ -254,18 +275,128 @@ onMounted(async () => { await loadDepts(); await loadDoctors(); await loadSchedu
 
 <style scoped>
 .basic-data {
+  height: max(560px, calc(100vh - var(--header-height) - var(--content-padding) * 2));
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   animation: fadeIn 0.4s ease-out;
 }
-.data-card {
-  border-radius: var(--radius-lg);
+
+.basic-data__card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-card);
   overflow: hidden;
 }
-.action-buttons {
+
+.basic-data__card :deep(.el-card__body) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.basic-data__tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: none;
+  box-shadow: none;
+}
+
+.basic-data__tabs :deep(.el-tabs__header) {
+  flex-shrink: 0;
+}
+
+.basic-data__tabs :deep(.el-tabs__content) {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-lg);
+  overflow: hidden;
+}
+
+.basic-data__tabs :deep(.el-tab-pane) {
+  height: 100%;
+  min-height: 0;
+}
+
+.basic-data__pane {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.basic-data__table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.basic-data__table-wrap :deep(.el-table) {
+  width: 100%;
+}
+
+.basic-data__actions {
   display: flex;
   flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
   gap: 0;
   white-space: nowrap;
+}
+
+.basic-data__filter-input,
+.basic-data :deep(.basic-data__filter-select),
+.basic-data :deep(.basic-data__filter-date) {
+  width: 200px;
+  flex: 0 0 200px;
+}
+
+.basic-data :deep(.basic-data__filter-select) {
+  width: 180px;
+  flex-basis: 180px;
+}
+
+.basic-data :deep(.basic-data__form-control) {
+  width: 100%;
+}
+
+@media (max-width: 1180px) {
+  .basic-data {
+    height: auto;
+    min-height: max(560px, calc(100vh - var(--header-height) - var(--content-padding) * 2));
+  }
+
+  .basic-data__card {
+    min-height: 620px;
+  }
+
+  .basic-data__table-wrap {
+    flex: none;
+    height: clamp(360px, 48vh, 560px);
+    min-height: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .basic-data__tabs :deep(.el-tabs__content) {
+    padding: var(--space-md);
+  }
+
+  .basic-data__table-wrap {
+    height: 320px;
+  }
+
+  .basic-data__filter-input,
+  .basic-data :deep(.basic-data__filter-select),
+  .basic-data :deep(.basic-data__filter-date) {
+    width: 100%;
+    flex-basis: auto;
+  }
 }
 </style>

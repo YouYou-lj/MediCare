@@ -5,6 +5,7 @@ import com.medicare.entity.Doctor;
 import com.medicare.exception.BusinessException;
 import com.medicare.repository.DepartmentRepository;
 import com.medicare.repository.DoctorRepository;
+import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +38,8 @@ public class DoctorService {
         if (!departmentRepository.existsById(doctor.getDepartmentId())) {
             throw new BusinessException("所属科室不存在");
         }
+        doctor = doctorRepository.save(doctor);
+        doctor.setCode(CodeUtils.generateCode("DOC", doctor.getId()));
         return doctorRepository.save(doctor);
     }
 

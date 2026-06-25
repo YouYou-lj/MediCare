@@ -14,6 +14,8 @@ import java.util.Optional;
 
 public interface PrescriptionRepository extends JpaRepository<Prescription, Long> {
 
+    long countByPatientId(Long patientId);
+
     Optional<Prescription> findByRecordId(Long recordId);
 
     List<Prescription> findByPatientIdOrderByCreateTimeDesc(Long patientId);
@@ -23,7 +25,7 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
     /**
      * 处方列表 — 3 表 LEFT JOIN 投影
      */
-    @Query(value = "SELECT p.id, p.record_id AS recordId, p.patient_id AS patientId, p.doctor_id AS doctorId, "
+    @Query(value = "SELECT p.id, p.code, p.record_id AS recordId, p.patient_id AS patientId, p.doctor_id AS doctorId, "
             + "p.total_amount AS totalAmount, p.status, p.create_time AS createTime, "
             + "pat.name AS patientName, doc.name AS doctorName "
             + "FROM prescription p "

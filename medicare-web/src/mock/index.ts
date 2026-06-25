@@ -67,6 +67,14 @@ const users = [
 
 let nextId = 100
 
+function removeWhere<T>(items: T[], predicate: (item: T) => boolean) {
+  for (let i = items.length - 1; i >= 0; i--) {
+    if (predicate(items[i])) {
+      items.splice(i, 1)
+    }
+  }
+}
+
 export default [
   // ========== Auth ==========
   {
@@ -157,7 +165,7 @@ export default [
   {
     url: '/api/patients',
     method: 'get',
-    response: () => ({ code: 200, message: 'success', data: { list: patients, total: patients.length, page: 1, size: 20 } }),
+    response: () => ({ code: 200, message: 'success', data: patients }),
   },
   {
     url: '/api/patients/search',
@@ -178,14 +186,42 @@ export default [
     },
   },
   {
-    url: '/api/patients',
+    url: /\/api\/patients\/\d+$/,
     method: 'put',
-    response: ({ body }: any) => ({ code: 200, message: 'success', data: body }),
+    response: ({ body, url }: any) => {
+      const id = Number(url.split('/').pop())
+      const index = patients.findIndex((patient) => patient.id === id)
+      if (index < 0) return { code: 404, message: '患者不存在', data: null }
+      patients[index] = { ...patients[index], ...body, id }
+      return { code: 200, message: 'success', data: patients[index] }
+    },
   },
   {
-    url: '/api/patients',
+    url: /\/api\/patients\/\d+$/,
     method: 'delete',
-    response: () => ({ code: 200, message: 'success', data: null }),
+    response: ({ url }: any) => {
+      const id = Number(url.split('/').pop())
+      if (registrations.some((registration) => registration.patientId === id)
+          || medicalRecords.some((record) => record.patientId === id)
+          || prescriptions.some((prescription) => prescription.patientId === id)) {
+        return { code: 409, message: '该患者已有挂号/病历/处方记录，不能直接删除。请先处理关联业务数据，或保留患者档案。', data: null }
+      }
+      const index = patients.findIndex((patient) => patient.id === id)
+      if (index >= 0) patients.splice(index, 1)
+      return { code: 200, message: 'success', data: null }
+    },
+  },
+  {
+    url: /\/api\/patients\/\d+\/with-related$/,
+    method: 'delete',
+    response: ({ url }: any) => {
+      const id = Number(url.split('/').at(-2))
+      removeWhere(prescriptions, (prescription) => prescription.patientId === id)
+      removeWhere(medicalRecords, (record) => record.patientId === id)
+      removeWhere(registrations, (registration) => registration.patientId === id)
+      removeWhere(patients, (patient) => patient.id === id)
+      return { code: 200, message: 'success', data: null }
+    },
   },
 
   // ========== Schedules ==========

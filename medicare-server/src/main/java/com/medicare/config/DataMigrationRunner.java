@@ -26,6 +26,7 @@ public class DataMigrationRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
         ensureKnowledgeTables();
+        ensureAiChatTables();
         List<SysUser> users = sysUserRepository.findAll();
         int migrated = 0;
         for (SysUser user : users) {
@@ -69,7 +70,7 @@ public class DataMigrationRunner implements CommandLineRunner {
                   title VARCHAR(500) NOT NULL,
                   content LONGTEXT NOT NULL,
                   keywords VARCHAR(1000) DEFAULT NULL,
-                  embedding LONGTEXT DEFAULT NULL,
+                  vector_id VARCHAR(64) DEFAULT NULL,
                   embedding_model VARCHAR(100) DEFAULT NULL,
                   source_path VARCHAR(500) NOT NULL,
                   create_time DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -80,10 +81,41 @@ public class DataMigrationRunner implements CommandLineRunner {
                   FULLTEXT KEY ft_knowledge_chunk_content (title, content, keywords)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                 """);
-        addColumnIfAbsent("knowledge_chunk", "embedding", "ALTER TABLE knowledge_chunk ADD COLUMN embedding LONGTEXT DEFAULT NULL");
+        addColumnIfAbsent("knowledge_chunk", "vector_id", "ALTER TABLE knowledge_chunk ADD COLUMN vector_id VARCHAR(64) DEFAULT NULL COMMENT 'Qdrant 向量记录 UUID' AFTER keywords");
         addColumnIfAbsent("knowledge_chunk", "embedding_model", "ALTER TABLE knowledge_chunk ADD COLUMN embedding_model VARCHAR(100) DEFAULT NULL");
-        addIndexIfAbsent("knowledge_chunk", "idx_knowledge_chunk_embedding_model",
-                "ALTER TABLE knowledge_chunk ADD INDEX idx_knowledge_chunk_embedding_model (embedding_model)");
+        addIndexIfAbsent("knowledge_chunk", "idx_knowledge_chunk_vector_id",
+                "ALTER TABLE knowledge_chunk ADD UNIQUE INDEX idx_knowledge_chunk_vector_id (vector_id)");
+        dropColumnIfAbsent("knowledge_chunk", "embedding");
+    }
+
+    private void ensureAiChatTables() {
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS ai_chat_session (
+                  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                  user_id BIGINT UNSIGNED NOT NULL,
+                  session_key VARCHAR(64) NOT NULL,
+                  title VARCHAR(200) DEFAULT '新会话',
+                  create_time DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+                  update_time DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+                  PRIMARY KEY (id),
+                  UNIQUE KEY uk_ai_session_key (session_key),
+                  KEY idx_ai_session_user (user_id, update_time)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS ai_chat_message (
+                  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                  session_id BIGINT UNSIGNED NOT NULL,
+                  role VARCHAR(20) NOT NULL,
+                  content TEXT NOT NULL,
+                  references_json LONGTEXT DEFAULT NULL,
+                  create_time DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+                  PRIMARY KEY (id),
+                  KEY idx_ai_msg_session (session_id, create_time)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+        addColumnIfAbsent("ai_chat_message", "references_json",
+                "ALTER TABLE ai_chat_message ADD COLUMN references_json LONGTEXT DEFAULT NULL COMMENT 'AI 回复引用来源JSON' AFTER content");
     }
 
     private void addColumnIfAbsent(String tableName, String columnName, String sql) {
@@ -96,6 +128,19 @@ public class DataMigrationRunner implements CommandLineRunner {
                 """, Integer.class, tableName, columnName);
         if (count == null || count == 0) {
             jdbcTemplate.execute(sql);
+        }
+    }
+
+    private void dropColumnIfAbsent(String tableName, String columnName) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = ?
+                  AND COLUMN_NAME = ?
+                """, Integer.class, tableName, columnName);
+        if (count != null && count > 0) {
+            jdbcTemplate.execute("ALTER TABLE " + tableName + " DROP COLUMN " + columnName);
         }
     }
 

@@ -7,6 +7,7 @@ import com.medicare.dto.PrescriptionVO;
 import com.medicare.entity.*;
 import com.medicare.exception.BusinessException;
 import com.medicare.repository.*;
+import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +46,8 @@ public class PrescriptionService {
         prescription.setTotalAmount(totalAmount);
         prescription.setStatus(Prescription.STATUS_PENDING);
         prescription = prescriptionRepository.save(prescription);
+        prescription.setCode(CodeUtils.generateCode("PRE", prescription.getId()));
+        prescription = prescriptionRepository.save(prescription);
 
         // 逐条扣减库存 + 记录日志 + 保存明细
         for (PrescriptionItem item : items) {
@@ -56,6 +59,8 @@ public class PrescriptionService {
 
             // 保存明细
             item.setPrescriptionId(prescription.getId());
+            item = prescriptionItemRepository.save(item);
+            item.setCode(CodeUtils.generateCode("PIT", item.getId()));
             prescriptionItemRepository.save(item);
 
             // 记录库存日志
@@ -65,6 +70,8 @@ public class PrescriptionService {
             log.setQuantity(item.getQuantity());
             log.setOperator("system");
             log.setRemark("处方出库 - 处方ID:" + prescription.getId());
+            log = inventoryLogRepository.save(log);
+            log.setCode(CodeUtils.generateCode("INV", log.getId()));
             inventoryLogRepository.save(log);
         }
 
@@ -107,6 +114,8 @@ public class PrescriptionService {
             log.setQuantity(item.getQuantity());
             log.setOperator("system");
             log.setRemark("处方作废回滚 - 处方ID:" + id);
+            log = inventoryLogRepository.save(log);
+            log.setCode(CodeUtils.generateCode("INV", log.getId()));
             inventoryLogRepository.save(log);
         }
 
@@ -132,6 +141,7 @@ public class PrescriptionService {
 
         PrescriptionVO vo = new PrescriptionVO();
         vo.setId(prescription.getId());
+        vo.setCode(prescription.getCode());
         vo.setRecordId(prescription.getRecordId());
         vo.setPatientId(prescription.getPatientId());
         vo.setDoctorId(prescription.getDoctorId());
@@ -155,6 +165,7 @@ public class PrescriptionService {
         for (PrescriptionItem item : items) {
             PrescriptionItemVO itemVO = new PrescriptionItemVO();
             itemVO.setId(item.getId());
+            itemVO.setCode(item.getCode());
             itemVO.setPrescriptionId(item.getPrescriptionId());
             itemVO.setMedicineId(item.getMedicineId());
             itemVO.setQuantity(item.getQuantity());
@@ -167,6 +178,7 @@ public class PrescriptionService {
                 itemVO.setMedicineName(med.getName());
                 itemVO.setMedicineSpec(med.getSpec());
                 itemVO.setMedicineUnit(med.getUnit());
+                itemVO.setMedicineCode(med.getCode());
             }
             itemVOs.add(itemVO);
         }

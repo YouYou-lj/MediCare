@@ -2,7 +2,7 @@
   <div class="patient-list">
     <PageHeader title="患者管理" subtitle="患者建档、信息查询与编辑" />
 
-    <el-card shadow="hover" class="data-card">
+    <el-card shadow="hover" class="patient-list__card">
       <DataToolbar
         v-model:searchModelValue="keyword"
         search-placeholder="搜索姓名/身份证/手机号"
@@ -14,34 +14,45 @@
         @add="openDialog()"
       />
 
-      <el-table v-loading="loading" :data="tableData" stripe border style="width:100%">
-        <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="name" label="姓名" width="100" />
-        <el-table-column prop="idCard" label="身份证号" width="180" />
-        <el-table-column prop="gender" label="性别" width="70">
-          <template #default="{ row }">{{ ['女','男','其他'][row.gender] || '未知' }}</template>
-        </el-table-column>
-        <el-table-column prop="birthDate" label="出生日期" width="120" />
-        <el-table-column prop="phone" label="手机号" width="130" />
-        <el-table-column prop="allergyInfo" label="过敏史" show-overflow-tooltip />
-        <el-table-column label="操作" width="160" fixed="right" align="center">
-          <template #default="{ row }">
-            <div class="action-buttons">
-              <el-button size="small" type="primary" @click="openDialog(row)">编辑</el-button>
-              <el-popconfirm title="确定删除该患者? 删除后不可恢复" @confirm="handleDelete(row.id)">
-                <template #reference><el-button size="small" type="danger">删除</el-button></template>
-              </el-popconfirm>
-            </div>
+      <div class="patient-list__table-wrap">
+        <el-table
+          v-loading="loading"
+          :data="tableData"
+          stripe
+          border
+          height="100%"
+          :default-sort="{ prop: 'code', order: 'ascending' }"
+        >
+          <template #empty>
+            <EmptyState
+              icon="User"
+              title="暂无患者数据"
+              description="点击右上角“新增患者”按钮开始建档"
+            />
           </template>
-        </el-table-column>
-      </el-table>
-
-      <EmptyState
-        v-if="!loading && tableData.length === 0"
-        icon="User"
-        title="暂无患者数据"
-        description="点击右上角“新增患者”按钮开始建档"
-      />
+          <el-table-column type="index" label="序号" width="60" align="center" :resizable="false" />
+          <el-table-column prop="code" label="ID" width="120" align="center" :resizable="false" />
+          <el-table-column prop="name" label="姓名" min-width="100" align="center" :resizable="false" />
+          <el-table-column prop="idCard" label="身份证号" min-width="180" align="center" :resizable="false" />
+          <el-table-column prop="gender" label="性别" min-width="70" align="center" :resizable="false">
+            <template #default="{ row }">{{ ['女','男','其他'][row.gender] || '未知' }}</template>
+          </el-table-column>
+          <el-table-column prop="birthDate" label="出生日期" min-width="120" align="center" :resizable="false" />
+          <el-table-column prop="phone" label="手机号" min-width="130" align="center" :resizable="false" />
+          <el-table-column prop="allergyInfo" label="过敏史" min-width="200" show-overflow-tooltip :resizable="false" />
+          <el-table-column label="操作" width="160" align="center" :resizable="false">
+            <template #default="{ row }">
+              <div class="patient-list__actions">
+                <el-button size="small" type="primary" @click="openDialog(row)">编辑</el-button>
+                <el-popconfirm v-if="canDeletePatient" title="确定删除该患者? 删除后不可恢复" @confirm="handleDelete(row.id)">
+                  <template #reference><el-button size="small" type="danger">删除</el-button></template>
+                </el-popconfirm>
+                <el-button v-else size="small" type="danger" disabled>删除</el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑患者' : '新增患者'" width="550px" destroy-on-close>
@@ -67,15 +78,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { computed, ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import { listPatients, searchPatients, createPatient, updatePatient, deletePatient } from '../../api/patient'
+import { listPatients, searchPatients, createPatient, updatePatient, deletePatient, deletePatientWithRelated } from '../../api/patient'
 import type { Patient } from '../../types'
+import { useUserStore } from '../../stores/user'
 import PageHeader from '../../components/PageHeader.vue'
 import DataToolbar from '../../components/DataToolbar.vue'
 import EmptyState from '../../components/EmptyState.vue'
 
+const userStore = useUserStore()
 const tableData = ref<Patient[]>([])
 const keyword = ref('')
 const dialogVisible = ref(false)
@@ -83,8 +96,9 @@ const isEdit = ref(false)
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const saveLoading = ref(false)
+const canDeletePatient = computed(() => userStore.hasRole('admin'))
 
-const defaultForm = (): Patient => ({ idCard: '', name: '', gender: 1, birthDate: '', phone: '', address: '', allergyInfo: '' })
+const defaultForm = (): Patient => ({ idCard: '', name: '', gender: 1, birthDate: null, phone: '', address: '', allergyInfo: '' })
 const form = reactive<Patient>(defaultForm())
 
 const rules = {
@@ -97,7 +111,7 @@ async function loadData() {
   loading.value = true
   try {
     const res = await listPatients()
-    tableData.value = res.data
+    tableData.value = normalizePatientList(res.data).sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
   } catch {}
   loading.value = false
 }
@@ -107,7 +121,7 @@ async function handleSearch() {
   loading.value = true
   try {
     const res = await searchPatients(keyword.value)
-    tableData.value = res.data
+    tableData.value = normalizePatientList(res.data).sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
   } catch {}
   loading.value = false
 }
@@ -123,10 +137,11 @@ async function handleSave() {
   if (!valid) return
   saveLoading.value = true
   try {
+    const payload = buildPatientPayload()
     if (isEdit.value && form.id) {
-      await updatePatient(form.id, form)
+      await updatePatient(form.id, payload)
     } else {
-      await createPatient(form)
+      await createPatient(payload)
     }
     ElMessage.success('保存成功')
     dialogVisible.value = false
@@ -136,7 +151,47 @@ async function handleSave() {
 }
 
 async function handleDelete(id: number) {
-  try { await deletePatient(id); ElMessage.success('删除成功'); loadData() } catch {}
+  try {
+    await deletePatient(id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ''
+    if (!message.includes('已有挂号/病历/处方记录')) {
+      return
+    }
+    try {
+      await ElMessageBox.confirm(
+        '该患者已有挂号、病历或处方记录。继续操作将同时清理这些关联业务数据，再删除患者档案。此操作不可恢复，是否继续？',
+        '清理关联数据并删除',
+        {
+          confirmButtonText: '清理并删除',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }
+      )
+      await deletePatientWithRelated(id)
+      ElMessage.success('关联业务数据已清理，患者已删除')
+      loadData()
+    } catch {}
+  }
+}
+
+function buildPatientPayload(): Patient {
+  return {
+    id: form.id,
+    idCard: form.idCard.trim(),
+    name: form.name.trim(),
+    gender: form.gender,
+    birthDate: form.birthDate || null,
+    phone: form.phone?.trim() || '',
+    address: form.address?.trim() || '',
+    allergyInfo: form.allergyInfo?.trim() || '',
+  }
+}
+
+function normalizePatientList(data: Patient[] | { list?: Patient[] }) {
+  return Array.isArray(data) ? data : data?.list || []
 }
 
 onMounted(loadData)
@@ -144,18 +199,73 @@ onMounted(loadData)
 
 <style scoped>
 .patient-list {
+  height: max(560px, calc(100vh - var(--header-height) - var(--content-padding) * 2));
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   animation: fadeIn 0.4s ease-out;
 }
-.data-card {
-  border-radius: var(--radius-lg);
+
+.patient-list__card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-card);
   overflow: hidden;
 }
-.action-buttons {
+
+.patient-list__card :deep(.el-card__body) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg);
+}
+
+.patient-list__table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.patient-list__table-wrap :deep(.el-table) {
+  width: 100%;
+}
+
+.patient-list__actions {
   display: flex;
   flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
   gap: 0;
   white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .patient-list {
+    height: auto;
+    min-height: max(560px, calc(100vh - var(--header-height) - var(--content-padding) * 2));
+  }
+
+  .patient-list__card {
+    min-height: 620px;
+  }
+
+  .patient-list__table-wrap {
+    flex: none;
+    height: clamp(360px, 48vh, 560px);
+    min-height: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .patient-list__card :deep(.el-card__body) {
+    padding: var(--space-md);
+  }
+
+  .patient-list__table-wrap {
+    height: 320px;
+  }
 }
 </style>

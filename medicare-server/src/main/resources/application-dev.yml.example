@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/medicare?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
-    username: root
-    password: ${MYSQL_PASSWORD:your_password_here}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:medicare}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:your_password_here}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -37,5 +37,13 @@ ai:
   provider: ${AI_PROVIDER:bailian}
   api-key: ${AI_API_KEY:}
   model: ${AI_MODEL:deepseek-v4-flash}
+  embedding-model: ${AI_EMBEDDING_MODEL:text-embedding-v4}
   base-url: ${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
   timeout: ${AI_TIMEOUT:20s}
+  executor:
+    generation-core-size: ${AI_GENERATION_CORE_SIZE:4}
+    generation-max-size: ${AI_GENERATION_MAX_SIZE:12}
+    retrieval-core-size: ${AI_RETRIEVAL_CORE_SIZE:4}
+    retrieval-max-size: ${AI_RETRIEVAL_MAX_SIZE:12}
+    queue-capacity: ${AI_EXECUTOR_QUEUE_CAPACITY:100}
+    retrieval-min-parallel-chunks: ${AI_RETRIEVAL_MIN_PARALLEL_CHUNKS:32}

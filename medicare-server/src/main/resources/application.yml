@@ -8,9 +8,9 @@ spring:
       - optional:file:./medicare-server/application-secret.yml
 
   datasource:
-    url: jdbc:mysql://localhost:3306/medicare?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
-    username: root
-    password: a123456.
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:medicare}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:a123456.}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -56,3 +56,21 @@ ai:
   embedding-model: ${AI_EMBEDDING_MODEL:text-embedding-v4}
   base-url: ${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
   timeout: ${AI_TIMEOUT:20s}
+  executor:
+    generation-core-size: ${AI_GENERATION_CORE_SIZE:4}
+    generation-max-size: ${AI_GENERATION_MAX_SIZE:12}
+    retrieval-core-size: ${AI_RETRIEVAL_CORE_SIZE:4}
+    retrieval-max-size: ${AI_RETRIEVAL_MAX_SIZE:12}
+    queue-capacity: ${AI_EXECUTOR_QUEUE_CAPACITY:100}
+    retrieval-min-parallel-chunks: ${AI_RETRIEVAL_MIN_PARALLEL_CHUNKS:32}
+    vector-core-size: ${AI_EXECUTOR_VECTOR_CORE_SIZE:4}
+    vector-max-size: ${AI_EXECUTOR_VECTOR_MAX_SIZE:8}
+  vector:
+    enabled: ${AI_VECTOR_ENABLED:true}
+    store: ${AI_VECTOR_STORE:qdrant}
+    host: ${AI_VECTOR_HOST:localhost}
+    port: ${AI_VECTOR_PORT:6334}
+    use-tls: ${AI_VECTOR_USE_TLS:false}
+    collection: ${AI_VECTOR_COLLECTION:medicare_knowledge}
+    dimension: ${AI_VECTOR_DIMENSION:1024}
+    distance: ${AI_VECTOR_DISTANCE:cosine}

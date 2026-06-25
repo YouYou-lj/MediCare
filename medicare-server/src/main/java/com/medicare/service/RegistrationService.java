@@ -6,6 +6,7 @@ import com.medicare.entity.Schedule;
 import com.medicare.exception.BusinessException;
 import com.medicare.repository.RegistrationRepository;
 import com.medicare.repository.ScheduleRepository;
+import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +60,8 @@ public class RegistrationService {
         reg.setStatus(Registration.STATUS_WAITING);
         reg.setSeqNo((int) seqNo);
         reg.setFee(java.math.BigDecimal.TEN);  // 默认挂号费 10 元
+        reg = registrationRepository.save(reg);
+        reg.setCode(CodeUtils.generateCode("REG", reg.getId()));
         return registrationRepository.save(reg);
     }
 

@@ -30,9 +30,8 @@ public class KnowledgeChunk {
     @Column(length = 1000)
     private String keywords;
 
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String embedding;
+    @Column(name = "vector_id", length = 64, unique = true)
+    private String vectorId;
 
     @Column(name = "embedding_model", length = 100)
     private String embeddingModel;

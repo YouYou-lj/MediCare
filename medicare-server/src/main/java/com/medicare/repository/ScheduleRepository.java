@@ -30,7 +30,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     /**
      * 查询排班列表（带医生+科室名称）
      */
-    @Query(value = "SELECT s.id, s.doctor_id AS doctorId, s.work_date AS workDate, s.time_slot AS timeSlot, "
+    @Query(value = "SELECT s.id, s.code, s.doctor_id AS doctorId, s.work_date AS workDate, s.time_slot AS timeSlot, "
             + "s.total_slots AS totalSlots, s.remain_slots AS remainSlots, s.create_time AS createTime, "
             + "d.name AS doctorName, dep.name AS departmentName "
             + "FROM schedule s LEFT JOIN doctor d ON s.doctor_id = d.id "
@@ -44,7 +44,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     /**
      * 查询可用号源（剩余 > 0）
      */
-    @Query(value = "SELECT s.id, s.doctor_id AS doctorId, s.work_date AS workDate, s.time_slot AS timeSlot, "
+    @Query(value = "SELECT s.id, s.code, s.doctor_id AS doctorId, s.work_date AS workDate, s.time_slot AS timeSlot, "
             + "s.total_slots AS totalSlots, s.remain_slots AS remainSlots, s.create_time AS createTime, "
             + "d.name AS doctorName, dep.name AS departmentName "
             + "FROM schedule s LEFT JOIN doctor d ON s.doctor_id = d.id "

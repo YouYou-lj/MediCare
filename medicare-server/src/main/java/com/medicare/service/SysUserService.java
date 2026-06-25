@@ -3,6 +3,7 @@ package com.medicare.service;
 import com.medicare.entity.SysUser;
 import com.medicare.exception.BusinessException;
 import com.medicare.repository.SysUserRepository;
+import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,8 @@ public class SysUserService {
             throw new BusinessException("用户名已存在");
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user = sysUserRepository.save(user);
+        user.setCode(CodeUtils.generateCode("USR", user.getId()));
         return sysUserRepository.save(user);
     }
 

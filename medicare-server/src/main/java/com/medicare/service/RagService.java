@@ -1,15 +1,17 @@
 package com.medicare.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medicare.config.AiProperties;
+import com.medicare.config.AiTaskExecutorConfig.AiTaskExecutors;
 import com.medicare.dto.AiChatResponse;
 import com.medicare.dto.KnowledgeDocumentContentResponse;
 import org.springframework.util.StringUtils;
 import com.medicare.dto.KnowledgeDocumentResponse;
+import com.medicare.dto.KnowledgeSystemUploadBatchResponse;
 import com.medicare.dto.KnowledgeUploadResponse;
 import com.medicare.dto.RagQueryRequest;
 import com.medicare.dto.RagReindexResponse;
+import com.medicare.dto.VectorRecord;
 import com.medicare.entity.KnowledgeChunk;
 import com.medicare.entity.KnowledgeDocument;
 import com.medicare.exception.BusinessException;
@@ -22,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,6 +34,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -40,14 +48,20 @@ public class RagService {
     private static final int CHUNK_SIZE = 1800;
     private static final int CHUNK_OVERLAP = 240;
     private static final String INDEX_VERSION = "rag-v3-bailian-embedding-v4";
+    private static final String USER_UPLOAD_PREFIX = "uploads/";
+    private static final String ASSISTANT_UPLOAD_PREFIX = "assistant-uploads/";
+    private static final String SYSTEM_UPLOAD_PREFIX = "system-uploads/";
+    private static final Pattern SYSTEM_UPLOAD_TITLE_PATTERN = Pattern.compile("^SYS-?(\\d{3})\\s+-\\s+.*");
 
     private final KnowledgeDocumentRepository documentRepository;
     private final KnowledgeChunkRepository chunkRepository;
     private final AiProperties aiProperties;
     private final RestClient.Builder restClientBuilder;
-    private final ObjectMapper objectMapper;
     private final DocumentTextExtractionService documentTextExtractionService;
     private final LiveBusinessContextService liveBusinessContextService;
+    private final AiTaskExecutors aiTaskExecutors;
+    private final VectorStoreService vectorStoreService;
+    private final TransactionTemplate transactionTemplate;
 
     @Transactional(readOnly = true)
     public List<KnowledgeDocumentResponse> listDocuments() {
@@ -59,7 +73,7 @@ public class RagService {
                         .sourceType(document.getSourceType())
                         .chunkCount(document.getChunkCount())
                         .status(document.getStatus())
-                        .isSystem(!document.getSourcePath().startsWith("uploads/"))
+                        .isSystem(isSystemSourcePath(document.getSourcePath()))
                         .createTime(document.getCreateTime())
                         .updateTime(document.getUpdateTime())
                         .build())
@@ -76,7 +90,7 @@ public class RagService {
                         .sourceType(document.getSourceType())
                         .chunkCount(document.getChunkCount())
                         .status(document.getStatus())
-                        .isSystem(!document.getSourcePath().startsWith("uploads/"))
+                        .isSystem(isSystemSourcePath(document.getSourcePath()))
                         .createTime(document.getCreateTime())
                         .updateTime(document.getUpdateTime())
                         .build())
@@ -88,7 +102,7 @@ public class RagService {
         KnowledgeDocument document = documentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(404, "文档不存在"));
         String content = buildDocumentContent(document.getId());
-        boolean isSystem = !document.getSourcePath().startsWith("uploads/");
+        boolean isSystem = isSystemSourcePath(document.getSourcePath());
         return KnowledgeDocumentContentResponse.builder()
                 .id(document.getId())
                 .filename(document.getTitle())
@@ -107,12 +121,24 @@ public class RagService {
     public void deleteDocument(Long id) {
         KnowledgeDocument document = documentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(404, "文档不存在"));
+        boolean isSystem = isSystemSourcePath(document.getSourcePath());
+        if (isSystem) {
+            throw new BusinessException(403, "系统内置文档不可删除");
+        }
+        List<KnowledgeChunk> chunks = chunkRepository.findByDocumentId(document.getId());
+        List<String> vectorIds = chunks.stream().map(KnowledgeChunk::getVectorId).filter(Objects::nonNull).toList();
         chunkRepository.deleteByDocumentId(document.getId());
         documentRepository.delete(document);
+        if (!vectorIds.isEmpty()) {
+            try {
+                vectorStoreService.deleteVectors(vectorIds);
+            } catch (Exception e) {
+                log.warn("删除文档向量失败，已保留关系库数据: id={}, {}", id, e.getMessage());
+            }
+        }
         log.info("知识库文档已删除: id={}, title={}", id, document.getTitle());
     }
 
-    @Transactional
     public KnowledgeDocumentResponse updateDocument(Long id, String content) {
         if (content == null || content.isBlank()) {
             throw new BusinessException(400, "文档内容不能为空");
@@ -120,9 +146,12 @@ public class RagService {
         KnowledgeDocument document = documentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(404, "文档不存在"));
         String sourcePath = document.getSourcePath();
+        boolean isSystem = isSystemSourcePath(sourcePath);
+        if (isSystem) {
+            throw new BusinessException(403, "系统内置文档不可编辑");
+        }
         String sourceType = document.getSourceType();
         String title = document.getTitle();
-        boolean isSystem = !sourcePath.startsWith("uploads/");
         try {
             IndexResult result = indexContent(title, sourcePath, sourceType, content, true);
             return KnowledgeDocumentResponse.builder()
@@ -155,30 +184,90 @@ public class RagService {
         return sb.toString();
     }
 
-    @Transactional
+    /**
+     * 清空所有系统文件（含已索引的向量数据），保留用户上传文档。
+     */
+    public void clearSystemDocuments() {
+        List<KnowledgeChunk> systemChunks;
+        Set<String> systemSourcePaths = new LinkedHashSet<>();
+        try {
+            systemChunks = chunkRepository.findAllSystemChunks();
+            systemSourcePaths.addAll(chunkRepository.findAllSystemSourcePaths());
+            systemSourcePaths.addAll(documentRepository.findAllSystemSourcePaths());
+        } catch (Exception e) {
+            log.error("读取系统文档索引失败: {}", e.getMessage(), e);
+            throw new BusinessException(500, "读取系统文件索引失败：" + e.getMessage());
+        }
+
+        List<String> vectorIds = systemChunks.stream()
+                .map(KnowledgeChunk::getVectorId)
+                .filter(Objects::nonNull)
+                .filter(id -> !id.isBlank())
+                .distinct()
+                .toList();
+        deleteSystemVectors(vectorIds, systemSourcePaths);
+
+        try {
+            transactionTemplate.executeWithoutResult(status -> {
+                int chunks = chunkRepository.deleteAllSystemChunks();
+                int docs = documentRepository.deleteAllSystemDocuments();
+                log.info("已删除系统文档 {} 条、分块 {} 条", docs, chunks);
+            });
+        } catch (Exception e) {
+            log.error("清空关系库系统文档失败: {}", e.getMessage(), e);
+            throw new BusinessException(500, "清空系统文件失败：" + e.getMessage());
+        }
+        log.info("已清空所有系统知识库文档及向量索引");
+    }
+
+    private void deleteSystemVectors(List<String> vectorIds, Collection<String> sourcePaths) {
+        if (!vectorIds.isEmpty()) {
+            try {
+                vectorStoreService.deleteVectors(vectorIds);
+            } catch (Exception e) {
+                log.warn("按 vectorId 删除系统向量失败，继续按 sourcePath 清理: {}", e.getMessage());
+            }
+        }
+        List<String> cleanedSourcePaths = sourcePaths.stream()
+                .filter(Objects::nonNull)
+                .filter(path -> !path.isBlank())
+                .distinct()
+                .toList();
+        if (!cleanedSourcePaths.isEmpty()) {
+            try {
+                vectorStoreService.deleteVectorsBySourcePaths(cleanedSourcePaths);
+            } catch (Exception e) {
+                log.warn("按 sourcePath 删除系统向量失败，继续清空关系库系统索引: {}", e.getMessage());
+            }
+        }
+    }
+
     public RagReindexResponse reindex(Path projectRoot) {
+        // 1. 清空向量数据库与关系库中的旧系统文档
+        clearSystemDocuments();
+
         List<Path> files = collectKnowledgeFiles(projectRoot);
+
+        // 2. 文件级索引保持顺序执行，避免占满 vectorExecutor 后内部 embedding 任务无可用线程。
+        // 系统文件统一编号 SYS-001 起，与上传系统文件格式保持一致。
         int documents = 0;
         int chunks = 0;
-
+        int sequence = 1;
+        List<String> failures = new ArrayList<>();
         for (Path file : files) {
             try {
-                String content = normalizeContent(file, Files.readString(file, StandardCharsets.UTF_8));
-                if (content.isBlank()) {
-                    continue;
-                }
-                String sourcePath = projectRoot.relativize(file).toString();
-                IndexResult result = indexContent(file.getFileName().toString(), sourcePath, resolveSourceType(file), content, false);
-                if (!result.updated()) {
-                    documents++;
-                    chunks += result.chunkCount();
-                    continue;
-                }
-                documents++;
+                IndexResult result = indexSystemFile(projectRoot, file, sequence++);
+                if (result.updated()) documents++;
                 chunks += result.chunkCount();
             } catch (Exception e) {
+                failures.add(file.getFileName() + ": " + e.getMessage());
                 log.warn("知识库文档处理失败: {}", file, e);
             }
+        }
+
+        if (!failures.isEmpty()) {
+            throw new BusinessException(500, "知识库重建失败，失败文件数 " + failures.size()
+                    + "：" + String.join("；", failures.stream().limit(3).toList()));
         }
 
         return RagReindexResponse.builder()
@@ -188,7 +277,21 @@ public class RagService {
                 .build();
     }
 
-    @Transactional
+    private IndexResult indexSystemFile(Path projectRoot, Path file, int sequence) {
+        try {
+            String content = normalizeContent(file, Files.readString(file, StandardCharsets.UTF_8));
+            if (content.isBlank()) {
+                return new IndexResult(false, 0);
+            }
+            String sourcePath = projectRoot.relativize(file).toString();
+            String basename = file.getFileName().toString();
+            String title = String.format("SYS-%03d - %s", sequence, basename);
+            return indexContent(title, sourcePath, resolveSourceType(file), content, true);
+        } catch (Exception e) {
+            throw new RuntimeException("知识库文档处理失败: " + file, e);
+        }
+    }
+
     public KnowledgeUploadResponse uploadDocument(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(400, "请选择要上传的知识库文档");
@@ -219,6 +322,173 @@ public class RagService {
         }
     }
 
+    public KnowledgeUploadResponse uploadDocumentForAssistant(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(400, "请选择要上传的文件");
+        }
+        String filename = Optional.ofNullable(file.getOriginalFilename()).orElse("document").trim();
+        if (filename.isBlank()) {
+            filename = "document";
+        }
+        String content = normalizeUploadedContent(documentTextExtractionService.extractText(file));
+        if (content.isBlank()) {
+            throw new BusinessException(400, "文件中未解析到可用于检索的文本内容");
+        }
+        String sourceType = documentTextExtractionService.resolveSourceType(filename);
+        String sourcePath = "assistant-uploads/" + System.currentTimeMillis() + "-" + sanitizeFilename(filename);
+        try {
+            IndexResult result = indexContent(filename, sourcePath, sourceType, content, true);
+            return KnowledgeUploadResponse.builder()
+                    .filename(filename)
+                    .sourcePath(sourcePath)
+                    .sourceType(sourceType)
+                    .chunkCount(result.chunkCount())
+                    .message("文件解析完成，已可用于 AI 问答")
+                    .build();
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException(500, "文件写入知识库失败：" + e.getMessage());
+        }
+    }
+
+    public KnowledgeUploadResponse uploadSystemDocument(MultipartFile file, Path projectRoot) {
+        return processSystemFile(file, projectRoot, nextSystemUploadSequence());
+    }
+
+    public KnowledgeSystemUploadBatchResponse uploadSystemDocuments(List<MultipartFile> files, Path projectRoot) {
+        if (files == null || files.isEmpty()) {
+            throw new BusinessException(400, "请选择要上传的系统文件");
+        }
+        int sequence = nextSystemUploadSequence();
+        List<KnowledgeUploadResponse> results = new ArrayList<>();
+        int successCount = 0;
+        int failCount = 0;
+        int totalChunkCount = 0;
+
+        for (MultipartFile file : files) {
+            if (file == null || file.isEmpty()) {
+                continue;
+            }
+            String filename = Optional.ofNullable(file.getOriginalFilename()).orElse("document").trim();
+            try {
+                KnowledgeUploadResponse response = processSystemFile(file, projectRoot, sequence++);
+                results.add(response);
+                successCount++;
+                totalChunkCount += Optional.ofNullable(response.getChunkCount()).orElse(0);
+            } catch (BusinessException e) {
+                failCount++;
+                results.add(KnowledgeUploadResponse.builder()
+                        .filename(filename)
+                        .message("上传失败：" + e.getMessage())
+                        .build());
+            } catch (Exception e) {
+                failCount++;
+                results.add(KnowledgeUploadResponse.builder()
+                        .filename(filename)
+                        .message("上传失败：" + e.getMessage())
+                        .build());
+            }
+        }
+
+        if (successCount == 0) {
+            throw new BusinessException(400, "所有文件上传失败：" + results.get(0).getMessage());
+        }
+
+        String message = String.format("成功上传 %d 个系统文件，共 %d 个分块", successCount, totalChunkCount);
+        if (failCount > 0) {
+            message += String.format("，%d 个文件上传失败", failCount);
+        }
+
+        return KnowledgeSystemUploadBatchResponse.builder()
+                .totalCount(results.size())
+                .successCount(successCount)
+                .failCount(failCount)
+                .totalChunkCount(totalChunkCount)
+                .message(message)
+                .files(results)
+                .build();
+    }
+
+    private KnowledgeUploadResponse processSystemFile(MultipartFile file, Path projectRoot, int sequence) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(400, "请选择要上传的系统文件");
+        }
+        String originalFilename = Optional.ofNullable(file.getOriginalFilename()).orElse("document").trim();
+        if (originalFilename.isBlank()) {
+            originalFilename = "document";
+        }
+        // 文件夹上传时 originalFilename 可能包含相对路径，取 basename 作为展示标题
+        String basename = Path.of(originalFilename).getFileName().toString();
+        String content = normalizeUploadedContent(documentTextExtractionService.extractText(file));
+        if (content.isBlank()) {
+            throw new BusinessException(400, "文件中未解析到可用于检索的文本内容");
+        }
+        String sourceType = documentTextExtractionService.resolveSourceType(basename);
+
+        Path uploadDir = projectRoot.resolve("system-uploads");
+        try {
+            Files.createDirectories(uploadDir);
+        } catch (IOException e) {
+            throw new BusinessException(500, "创建系统文件目录失败：" + e.getMessage());
+        }
+        // 使用完整相对路径构造唯一保存名，避免不同文件夹下同名文件冲突
+        String savedName = System.currentTimeMillis() + "-" + sanitizeFilename(originalFilename);
+        Path savedFile = uploadDir.resolve(savedName);
+        try {
+            file.transferTo(savedFile);
+        } catch (IOException e) {
+            throw new BusinessException(500, "保存系统文件失败：" + e.getMessage());
+        }
+
+        String title = String.format("SYS-%03d - %s", sequence, basename);
+        String sourcePath = projectRoot.relativize(savedFile).toString();
+        try {
+            IndexResult result = indexContent(title, sourcePath, sourceType, content, true);
+            return KnowledgeUploadResponse.builder()
+                    .filename(title)
+                    .sourcePath(sourcePath)
+                    .sourceType(sourceType)
+                    .chunkCount(result.chunkCount())
+                    .message("系统文件上传并写入知识库成功")
+                    .build();
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException(500, "系统文件写入知识库失败：" + e.getMessage());
+        }
+    }
+
+    private int nextSystemUploadSequence() {
+        int maxSequence = documentRepository.findByStatus(1).stream()
+                .filter(document -> isSystemUploadDocument(document))
+                .mapToInt(document -> extractSystemUploadSequence(document.getTitle()))
+                .max()
+                .orElse(0);
+        return maxSequence + 1;
+    }
+
+    private boolean isSystemUploadDocument(KnowledgeDocument document) {
+        String sourcePath = document.getSourcePath();
+        String title = document.getTitle();
+        return (sourcePath != null && sourcePath.startsWith(SYSTEM_UPLOAD_PREFIX))
+                || (title != null && SYSTEM_UPLOAD_TITLE_PATTERN.matcher(title).matches());
+    }
+
+    private int extractSystemUploadSequence(String title) {
+        if (title == null) {
+            return 0;
+        }
+        Matcher matcher = SYSTEM_UPLOAD_TITLE_PATTERN.matcher(title);
+        return matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
+    }
+
+    private boolean isSystemSourcePath(String sourcePath) {
+        return sourcePath != null
+                && !sourcePath.startsWith(USER_UPLOAD_PREFIX)
+                && !sourcePath.startsWith(ASSISTANT_UPLOAD_PREFIX);
+    }
+
     public AiChatResponse query(RagQueryRequest request) {
         int topK = request.getTopK() == null ? 5 : Math.max(1, Math.min(request.getTopK(), 8));
         List<KnowledgeChunk> chunks = retrieve(request.getQuestion(), topK);
@@ -232,7 +502,7 @@ public class RagService {
         }
 
         String prompt = buildRagPrompt(request.getQuestion(), chunks);
-        String answer = callModel(prompt);
+        String answer = callModelAsync(prompt);
         return AiChatResponse.builder()
                 .answer(answer)
                 .provider(normalizeProvider())
@@ -242,23 +512,23 @@ public class RagService {
     }
 
     /**
-     * 判断当前配置的 embedding 模型是否已有向量索引数据。
+     * 判断当前是否已有向量索引数据。
      */
     @Transactional(readOnly = true)
     public boolean hasEmbeddingIndex() {
-        return chunkRepository.countByEmbeddingModelAndEmbeddingIsNotNull(aiProperties.getEmbeddingModel()) > 0;
+        return chunkRepository.countByVectorIdIsNotNull() > 0;
     }
 
     /**
      * 仅检索知识库，返回引用列表（供 AI 助手对话前置检索使用）。
      */
     @Transactional(readOnly = true)
-    public List<AiChatResponse.AiReference> retrieveReferences(String question, int topK) {
+    public List<AiChatResponse.AiReference> retrieveReferences(String question, String sourcePath, int topK) {
         if (!StringUtils.hasText(question)) {
             return List.of();
         }
         int limit = Math.max(1, Math.min(topK, 8));
-        return toReferences(retrieve(question, limit));
+        return toReferences(retrieve(question, sourcePath, limit));
     }
 
     private List<AiChatResponse.AiReference> toReferences(List<KnowledgeChunk> chunks) {
@@ -281,33 +551,19 @@ public class RagService {
     }
 
     private List<Path> collectKnowledgeFiles(Path projectRoot) {
-        List<Path> roots = List.of(
-                projectRoot.resolve("DOC"),
-                projectRoot.resolve("docs"),
-                projectRoot.resolve("medicare-server/src/main/java/com/medicare/controller"),
-                projectRoot.resolve("medicare-server/src/main/java/com/medicare/dto"),
-                projectRoot.resolve("medicare-server/src/main/java/com/medicare/entity"),
-                projectRoot.resolve("medicare-web/src/api"),
-                projectRoot.resolve("medicare-web/src/types"),
-                projectRoot.resolve("medicare-web/src/router")
-        );
+        // 仅将 systemRAGFiles 目录下的文件作为系统知识库文档
+        Path root = projectRoot.resolve("systemRAGFiles");
         List<Path> files = new ArrayList<>();
-        for (Path root : roots) {
-            if (!Files.exists(root)) continue;
-            try (var stream = Files.walk(root)) {
-                stream.filter(Files::isRegularFile)
-                        .filter(this::isSupportedDocument)
-                        .forEach(files::add);
-            } catch (IOException e) {
-                log.warn("扫描知识库目录失败: {}", root, e);
-            }
+        if (!Files.exists(root)) {
+            return files;
         }
-        List.of("plan.md", "step.md", "push-requirements.md", "skill.md").forEach(name -> {
-            Path file = projectRoot.resolve(name);
-            if (Files.exists(file)) {
-                files.add(file);
-            }
-        });
+        try (var stream = Files.walk(root)) {
+            stream.filter(Files::isRegularFile)
+                    .filter(this::isSupportedDocument)
+                    .forEach(files::add);
+        } catch (IOException e) {
+            log.warn("扫描知识库目录失败: {}", root, e);
+        }
         return files.stream().distinct().sorted().toList();
     }
 
@@ -350,43 +606,161 @@ public class RagService {
                 .trim();
     }
 
+    /**
+     * 索引内容：先写入关系库（TransactionTemplate），再并行计算 embedding 并写入向量数据库。
+     * 该方法可在多线程中被调用，每个调用拥有独立事务。
+     */
     private IndexResult indexContent(String title, String sourcePath, String sourceType, String content, boolean forceUpdate)
             throws Exception {
         String contentHash = sha256(INDEX_VERSION + "\n" + content);
-        KnowledgeDocument document = documentRepository.findBySourcePath(sourcePath)
-                .orElseGet(KnowledgeDocument::new);
-        if (!forceUpdate && document.getId() != null && contentHash.equals(document.getContentHash())) {
-            return new IndexResult(false, document.getChunkCount());
+
+        IndexContext context = transactionTemplate.execute(status -> {
+            KnowledgeDocument document = documentRepository.findBySourcePath(sourcePath)
+                    .orElseGet(KnowledgeDocument::new);
+            if (!forceUpdate && document.getId() != null && contentHash.equals(document.getContentHash())) {
+                return new IndexContext(document.getId(), false, List.of(), List.of(), List.of(), document.getChunkCount(), false);
+            }
+
+            boolean newDocument = document.getId() == null;
+            document.setTitle(title);
+            document.setSourcePath(sourcePath);
+            document.setSourceType(sourceType);
+            document.setContentHash(contentHash);
+            document.setStatus(1);
+            document = documentRepository.save(document);
+            Long documentId = document.getId();
+
+            // 收集旧向量 ID 用于后续清理
+            List<KnowledgeChunk> oldChunks = chunkRepository.findByDocumentId(document.getId());
+            List<String> oldVectorIds = oldChunks.stream()
+                    .map(KnowledgeChunk::getVectorId)
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            chunkRepository.deleteByDocumentId(document.getId());
+
+            List<String> pieces = splitIntoChunks(content);
+            List<ChunkDraft> drafts = new ArrayList<>(pieces.size());
+            int index = 0;
+            for (String piece : pieces) {
+                String vectorId = UUID.randomUUID().toString();
+                KnowledgeChunk chunk = new KnowledgeChunk();
+                chunk.setDocumentId(document.getId());
+                chunk.setChunkIndex(index++);
+                chunk.setTitle(document.getTitle());
+                chunk.setSourcePath(sourcePath);
+                chunk.setContent(piece);
+                chunk.setKeywords(extractKeywords(piece));
+                chunk.setEmbeddingModel(aiProperties.getEmbeddingModel());
+                chunk.setVectorId(vectorId);
+                chunkRepository.save(chunk);
+                drafts.add(new ChunkDraft(chunk, piece, vectorId));
+            }
+            document.setChunkCount(pieces.size());
+            documentRepository.save(document);
+            return new IndexContext(documentId, newDocument, oldChunks, oldVectorIds, drafts, pieces.size(), true);
+        });
+
+        if (context == null || !context.updated) {
+            return new IndexResult(false, context != null ? context.chunkCount : 0);
         }
 
-        document.setTitle(title);
-        document.setSourcePath(sourcePath);
-        document.setSourceType(sourceType);
-        document.setContentHash(contentHash);
-        document.setStatus(1);
-        document = documentRepository.save(document);
-        chunkRepository.deleteByDocumentId(document.getId());
+        try {
+            // 并行计算各分块 embedding
+            List<CompletableFuture<VectorRecord>> embeddingFutures = context.drafts.stream()
+                    .map(draft -> CompletableFuture.supplyAsync(
+                            () -> new VectorRecord(
+                                    draft.vectorId,
+                                    createEmbedding(draft.content),
+                                    String.valueOf(draft.chunk.getDocumentId()),
+                                    sourcePath,
+                                    title,
+                                    draft.chunk.getChunkIndex()
+                            ),
+                            aiTaskExecutors.vectorExecutor()
+                    ))
+                    .toList();
 
-        List<String> pieces = splitIntoChunks(content);
-        int index = 0;
-        for (String piece : pieces) {
-            KnowledgeChunk chunk = new KnowledgeChunk();
-            chunk.setDocumentId(document.getId());
-            chunk.setChunkIndex(index++);
-            chunk.setTitle(document.getTitle());
-            chunk.setSourcePath(sourcePath);
-            chunk.setContent(piece);
-            chunk.setKeywords(extractKeywords(piece));
-            chunk.setEmbeddingModel(aiProperties.getEmbeddingModel());
-            chunk.setEmbedding(serializeEmbedding(createEmbedding(piece)));
-            chunkRepository.save(chunk);
+            List<VectorRecord> records = embeddingFutures.stream()
+                    .map(this::joinFuture)
+                    .collect(Collectors.toList());
+
+            // 批量写入向量数据库
+            vectorStoreService.upsertVectors(records);
+        } catch (Exception e) {
+            rollbackFailedIndex(context);
+            throw e;
         }
-        document.setChunkCount(pieces.size());
-        documentRepository.save(document);
-        return new IndexResult(true, pieces.size());
+
+        // 异步清理旧向量，失败不影响新索引
+        if (!context.oldVectorIds.isEmpty()) {
+            CompletableFuture.runAsync(
+                    () -> {
+                        try {
+                            vectorStoreService.deleteVectors(context.oldVectorIds);
+                        } catch (Exception e) {
+                            log.warn("清理旧向量失败: {}", e.getMessage());
+                        }
+                    },
+                    aiTaskExecutors.vectorExecutor()
+            );
+        }
+
+        return new IndexResult(true, context.chunkCount);
+    }
+
+    private void rollbackFailedIndex(IndexContext context) {
+        List<String> newVectorIds = context.drafts.stream()
+                .map(ChunkDraft::vectorId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (!newVectorIds.isEmpty()) {
+            try {
+                vectorStoreService.deleteVectors(newVectorIds);
+            } catch (Exception e) {
+                log.warn("回滚失败索引时清理新向量失败: {}", e.getMessage());
+            }
+        }
+        transactionTemplate.executeWithoutResult(status -> {
+            chunkRepository.deleteByDocumentId(context.documentId);
+            if (context.newDocument) {
+                documentRepository.findById(context.documentId).ifPresent(documentRepository::delete);
+                return;
+            }
+            for (KnowledgeChunk oldChunk : context.oldChunks) {
+                KnowledgeChunk restored = new KnowledgeChunk();
+                restored.setDocumentId(oldChunk.getDocumentId());
+                restored.setChunkIndex(oldChunk.getChunkIndex());
+                restored.setTitle(oldChunk.getTitle());
+                restored.setContent(oldChunk.getContent());
+                restored.setKeywords(oldChunk.getKeywords());
+                restored.setVectorId(oldChunk.getVectorId());
+                restored.setEmbeddingModel(oldChunk.getEmbeddingModel());
+                restored.setSourcePath(oldChunk.getSourcePath());
+                chunkRepository.save(restored);
+            }
+            documentRepository.findById(context.documentId).ifPresent(document -> {
+                document.setChunkCount(context.oldChunks.size());
+                documentRepository.save(document);
+            });
+        });
     }
 
     private record IndexResult(boolean updated, int chunkCount) {
+    }
+
+    private record ChunkDraft(KnowledgeChunk chunk, String content, String vectorId) {
+    }
+
+    private record IndexContext(
+            Long documentId,
+            boolean newDocument,
+            List<KnowledgeChunk> oldChunks,
+            List<String> oldVectorIds,
+            List<ChunkDraft> drafts,
+            int chunkCount,
+            boolean updated
+    ) {
     }
 
     private List<String> splitIntoChunks(String content) {
@@ -413,26 +787,40 @@ public class RagService {
     }
 
     private List<KnowledgeChunk> retrieve(String question, int topK) {
-        List<Double> queryEmbedding = createEmbedding(question);
-        List<KnowledgeChunk> embeddedChunks = chunkRepository.findByEmbeddingModelAndEmbeddingIsNotNull(aiProperties.getEmbeddingModel());
-        if (!embeddedChunks.isEmpty()) {
-            Set<String> terms = tokenize(question);
-            return embeddedChunks.stream()
-                    .map(chunk -> new ScoredChunk(chunk, cosineSimilarity(queryEmbedding, parseEmbedding(chunk.getEmbedding()))
-                            + lexicalBoost(chunk, terms, question)))
-                    .filter(scored -> scored.score() > 0)
-                    .sorted((a, b) -> Double.compare(b.score(), a.score()))
-                    .limit(topK)
-                    .map(ScoredChunk::chunk)
-                    .toList();
+        return retrieve(question, null, topK);
+    }
+
+    private List<KnowledgeChunk> retrieve(String question, String sourcePath, int topK) {
+        if (!vectorStoreService.isAvailable()) {
+            return keywordRetrieve(question, sourcePath, topK);
         }
 
+        List<Double> queryEmbedding = createEmbedding(question);
+        List<String> vectorIds = vectorStoreService.search(queryEmbedding, sourcePath, topK * 2);
+        if (!vectorIds.isEmpty()) {
+            List<KnowledgeChunk> chunks = chunkRepository.findByVectorIdIn(vectorIds);
+            // 按向量搜索返回的顺序排序
+            Map<String, Integer> order = new HashMap<>();
+            for (int i = 0; i < vectorIds.size(); i++) {
+                order.putIfAbsent(vectorIds.get(i), i);
+            }
+            chunks.sort(Comparator.comparingInt(c -> order.getOrDefault(c.getVectorId(), Integer.MAX_VALUE)));
+            return chunks.stream().limit(topK).toList();
+        }
+
+        return keywordRetrieve(question, sourcePath, topK);
+    }
+
+    private List<KnowledgeChunk> keywordRetrieve(String question, String sourcePath, int topK) {
         Set<String> terms = tokenize(question);
         Map<Long, KnowledgeChunk> chunkMap = new LinkedHashMap<>();
         Map<Long, Integer> scoreMap = new HashMap<>();
         for (String term : terms) {
             List<KnowledgeChunk> matches = chunkRepository.searchByKeyword(term, 20);
             for (KnowledgeChunk chunk : matches) {
+                if (StringUtils.hasText(sourcePath) && !sourcePath.equals(chunk.getSourcePath())) {
+                    continue;
+                }
                 chunkMap.put(chunk.getId(), chunk);
                 scoreMap.merge(chunk.getId(), scoreChunk(chunk, term, question), Integer::sum);
             }
@@ -441,17 +829,6 @@ public class RagService {
                 .sorted((a, b) -> Integer.compare(scoreMap.getOrDefault(b.getId(), 0), scoreMap.getOrDefault(a.getId(), 0)))
                 .limit(topK)
                 .toList();
-    }
-
-    private record ScoredChunk(KnowledgeChunk chunk, double score) {
-    }
-
-    private double lexicalBoost(KnowledgeChunk chunk, Set<String> terms, String question) {
-        int score = 0;
-        for (String term : terms) {
-            score += scoreChunk(chunk, term, question);
-        }
-        return Math.min(score, 60) / 1000.0;
     }
 
     private Set<String> tokenize(String question) {
@@ -549,6 +926,33 @@ public class RagService {
         return content.asText();
     }
 
+    private String callModelAsync(String prompt) {
+        try {
+            return CompletableFuture.supplyAsync(
+                    () -> callModel(prompt),
+                    aiTaskExecutors.generationExecutor()
+            ).join();
+        } catch (CompletionException e) {
+            throw unwrapCompletionException(e);
+        }
+    }
+
+    private <T> T joinFuture(CompletableFuture<T> future) {
+        try {
+            return future.join();
+        } catch (CompletionException e) {
+            throw unwrapCompletionException(e);
+        }
+    }
+
+    private RuntimeException unwrapCompletionException(CompletionException e) {
+        Throwable cause = e.getCause() == null ? e : e.getCause();
+        if (cause instanceof RuntimeException runtimeException) {
+            return runtimeException;
+        }
+        return new BusinessException(500, "AI 异步任务异常：" + cause.getMessage());
+    }
+
     private List<Double> createEmbedding(String input) {
         validateProviderConfig();
         Map<String, Object> body = Map.of(
@@ -583,54 +987,6 @@ public class RagService {
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + aiProperties.getApiKey())
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
-    }
-
-    private String serializeEmbedding(List<Double> embedding) {
-        try {
-            return objectMapper.writeValueAsString(embedding);
-        } catch (Exception e) {
-            throw new BusinessException(500, "向量序列化失败");
-        }
-    }
-
-    private List<Double> parseEmbedding(String embedding) {
-        if (embedding == null || embedding.isBlank()) {
-            return List.of();
-        }
-        try {
-            JsonNode node = objectMapper.readTree(embedding);
-            if (!node.isArray()) {
-                return List.of();
-            }
-            List<Double> values = new ArrayList<>(node.size());
-            for (JsonNode value : node) {
-                values.add(value.asDouble());
-            }
-            return values;
-        } catch (Exception e) {
-            log.warn("知识库向量解析失败，chunk embedding 将被跳过", e);
-            return List.of();
-        }
-    }
-
-    private double cosineSimilarity(List<Double> left, List<Double> right) {
-        if (left.isEmpty() || right.isEmpty() || left.size() != right.size()) {
-            return 0;
-        }
-        double dot = 0;
-        double leftNorm = 0;
-        double rightNorm = 0;
-        for (int i = 0; i < left.size(); i++) {
-            double l = left.get(i);
-            double r = right.get(i);
-            dot += l * r;
-            leftNorm += l * l;
-            rightNorm += r * r;
-        }
-        if (leftNorm == 0 || rightNorm == 0) {
-            return 0;
-        }
-        return dot / (Math.sqrt(leftNorm) * Math.sqrt(rightNorm));
     }
 
     private void validateProviderConfig() {

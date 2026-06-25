@@ -24,3 +24,7 @@ export function updatePatient(id: number, data: Patient) {
 export function deletePatient(id: number) {
   return request.delete<any, Result<void>>(`/patients/${id}`)
 }
+
+export function deletePatientWithRelated(id: number) {
+  return request.delete<any, Result<void>>(`/patients/${id}/with-related`)
+}

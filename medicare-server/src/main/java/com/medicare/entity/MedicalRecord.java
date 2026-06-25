@@ -16,6 +16,9 @@ public class MedicalRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(length = 32, unique = true)
+    private String code;
+
     @Column(name = "registration_id", nullable = false)
     private Long registrationId;
 

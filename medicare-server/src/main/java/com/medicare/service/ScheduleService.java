@@ -5,6 +5,7 @@ import com.medicare.entity.Schedule;
 import com.medicare.exception.BusinessException;
 import com.medicare.repository.DoctorRepository;
 import com.medicare.repository.ScheduleRepository;
+import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -42,6 +43,8 @@ public class ScheduleService {
             throw new BusinessException("医生不存在");
         }
         schedule.setRemainSlots(schedule.getTotalSlots());
+        schedule = scheduleRepository.save(schedule);
+        schedule.setCode(CodeUtils.generateCode("SCH", schedule.getId()));
         return scheduleRepository.save(schedule);
     }
 

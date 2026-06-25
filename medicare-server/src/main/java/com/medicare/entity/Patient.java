@@ -17,6 +17,9 @@ public class Patient {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(length = 32, unique = true)
+    private String code;
+
     @Column(name = "id_card", nullable = false, length = 18)
     private String idCard;
 

@@ -12,10 +12,14 @@ import java.util.List;
 
 public interface RegistrationRepository extends JpaRepository<Registration, Long> {
 
+    long countByPatientId(Long patientId);
+
+    List<Registration> findByPatientIdOrderByCreateTimeDesc(Long patientId);
+
     /**
      * 查询今日挂号列表 — 4 表 LEFT JOIN 投影
      */
-    @Query(value = "SELECT r.id, r.patient_id AS patientId, r.schedule_id AS scheduleId, s.doctor_id AS doctorId, "
+    @Query(value = "SELECT r.id, r.code, r.patient_id AS patientId, r.schedule_id AS scheduleId, s.doctor_id AS doctorId, "
             + "r.reg_time AS regTime, r.status, r.seq_no AS seqNo, r.fee, r.create_time AS createTime, "
             + "p.name AS patientName, d.name AS doctorName, dep.name AS departmentName, s.time_slot AS timeSlot "
             + "FROM registration r "
@@ -32,7 +36,7 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
     /**
      * 按医生查询候诊/就诊中列表
      */
-    @Query(value = "SELECT r.id, r.patient_id AS patientId, r.schedule_id AS scheduleId, s.doctor_id AS doctorId, "
+    @Query(value = "SELECT r.id, r.code, r.patient_id AS patientId, r.schedule_id AS scheduleId, s.doctor_id AS doctorId, "
             + "r.reg_time AS regTime, r.status, r.seq_no AS seqNo, r.fee, r.create_time AS createTime, "
             + "p.name AS patientName, d.name AS doctorName, dep.name AS departmentName, s.time_slot AS timeSlot "
             + "FROM registration r "
@@ -83,7 +87,7 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
             + "GROUP BY dep.name",
             nativeQuery = true)
     List<Object[]> countTodayRegByDept(@Param("date") LocalDate date);
-    @Query(value = "SELECT r.id, r.patient_id AS patientId, r.schedule_id AS scheduleId, s.doctor_id AS doctorId, "
+    @Query(value = "SELECT r.id, r.code, r.patient_id AS patientId, r.schedule_id AS scheduleId, s.doctor_id AS doctorId, "
             + "r.reg_time AS regTime, r.status, r.seq_no AS seqNo, r.fee, r.create_time AS createTime, "
             + "p.name AS patientName, d.name AS doctorName, dep.name AS departmentName, s.time_slot AS timeSlot "
             + "FROM registration r "

@@ -92,6 +92,62 @@
 3. 第 4 步：升级首页仪表盘。
 4. 第 5 步：统一基础业务页面 UI。
 
+#### 3.2.1 业务页面容器和表格自适应规则
+
+适用页面：
+
+1. 基础数据、系统设置、挂号预约、医生工作站、病历管理、药品库存、处方管理、知识库上传、知识库管理等业务工作台页面。
+2. 任何包含工具栏、统计区、表格、详情/预览面板、弹窗操作的后台管理页面。
+
+布局规则：
+
+1. 页面根容器必须采用满高自适应工作区，优先使用 `height: max(560px, calc(100vh - var(--header-height) - var(--content-padding) * 2))`、`display: flex`、`min-width: 0`、`min-height: 0`。
+2. 多区域页面优先采用左侧主列表 + 右侧详情/预览的 grid 工作区；右侧面板只在足够宽的屏幕并排显示。
+3. 当浏览器宽度不足时，详情/预览面板必须自动下移，主表格必须先占满当前内容区域，不能让表格被侧栏或预览面板挤压。
+4. 推荐断点为 `1560px` 左右：小于该宽度时使用单列布局；小于 `768px` 时进一步压缩统计卡、工具栏和表格高度。
+5. 页面不得出现浏览器级横向滚动；横向滚动只能出现在表格内部。
+
+表格规则：
+
+1. 表格外层必须有独立 `__table-wrap` 容器，使用 `flex: 1`、`min-height: 0`、`overflow: hidden`。
+2. `el-table` 必须设置 `height="100%"`，并根据列宽稳定性决定是否设置 `:fit="false"`。
+3. 对于业务列表表格，左侧标识列和核心名称列固定在左侧，操作列固定在右侧，中间业务字段允许在表格内部横向滚动。
+4. 不允许窗口缩小时压缩关键列导致文字半截显示；日期时间、编号、状态标签、操作按钮等关键列必须使用明确 `width`。
+5. 如果使用 `min-width` 仍被 Element Plus 自动压缩，应改为 `width` 并给表格设置 `:fit="false"`。
+6. 表格操作按钮必须保持稳定尺寸，不得使用模板内联 `style`；统一通过 BEM 类控制按钮宽度、换行和间距。
+7. 状态、库存、角色、启用等标签必须使用统一组件或稳定类名，不能靠文本后追加省略号或内联颜色表现状态。
+
+#### 表头筛选规范
+
+1. 表格需要按列筛选时，统一使用 Element Plus `el-dropdown` + `el-checkbox-group` 自定义表头筛选下拉，不使用 Element Plus 内置 `filter-method`（避免样式不可控、触发不稳定）。
+2. 必须在 `medicare-web/src/styles/theme.css` 中使用全局类名：
+   - `.table-filter-header`：表头文字与筛选图标横向居中排列。
+   - `.table-filter-icon`：默认 `--text-muted`，启用/悬停时 `--color-primary`。
+   - `.table-filter-dropdown`：固定宽度 `160px`。
+   - `.table-filter-dropdown .el-dropdown-menu`：最大高度 `240px`，内部纵向滚动自适应。
+   - `.table-filter-group` 及内部 `.el-checkbox`、`.el-dropdown-item`：去除默认边距，垂直排列。
+3. 模板实现模式：
+   - 列头使用 `<template #header>`，外层 `div.table-filter-header`。
+   - `el-dropdown` 设置 `trigger="click"`、`:hide-on-click="false"`、`popper-class="table-filter-dropdown"`。
+   - `el-checkbox-group` 绑定 `activeFilters.xxx`，选项使用 `el-dropdown-item` 包裹 `el-checkbox`。
+4. 数据过滤使用响应式 `activeFilters` + `displayData` computed 手动过滤，不要依赖 `el-table` 内置过滤。
+5. 筛选图标通过 `:class="{ 'is-active': activeFilters.xxx.length }"` 高亮提示当前已启用筛选。
+6. 已有顶部搜索框/外部筛选的页面，可保留外部搜索；需要补充表头筛选时，优先对枚举/分类列（科室、医生、状态、来源、类型等）添加。
+
+样式规则：
+
+1. 业务页面样式必须使用唯一页面 Block，例如 `record-list`、`medicine-list`、`settings-view`，并使用 BEM 命名。
+2. 禁止模板内联 `style` 和 `:style`；颜色、背景、边框、间距、圆角必须优先使用 `theme.css` 中的 CSS 变量。
+3. 页面不得使用卡片套卡片作为主要布局；卡片仅用于独立面板、列表项、弹窗或实际需要框定的工具区域。
+4. 工具栏、统计区、详情区、空状态和弹窗要保持同一视觉密度，避免宽屏空洞或窄屏拥挤。
+
+验证要求：
+
+1. 完成后必须运行 `npm run build` 和 `git diff --check`。
+2. 必须在浏览器验证至少四个宽度：`1920px`、截图常见宽度约 `1435px`、`1280px`、移动端约 `390px`。
+3. 验证项包括：无页面级横向溢出、表格内部可横向滚动、左右固定列有效、关键列宽未被压缩、详情/预览面板在中小宽度自动下移。
+4. 如果修改了弹窗或行操作，还要验证弹窗能打开、表单控件宽度正常、不会触发删除或出入库等真实副作用。
+
 ---
 
 ### 3.3 Vue 前端功能任务
@@ -275,6 +331,12 @@ medicare-server/src/main/java/com/medicare/auth/
 4. AI 输出必须有安全提示：仅供辅助参考，不能替代医生判断。
 5. AI 服务异常时不能影响主业务。
 6. 所有 AI 工具调用都必须按当前登录角色做权限校验。
+7. AI 助手支持上传文件（docx、pdf、md）并走 RAG 检索回答：
+   - 前端使用 Element Plus `el-upload` 选择文件，限制 `accept=".docx,.pdf,.md"`。
+   - 调用已有 `/api/knowledge/documents/upload` 接口写入知识库并自动切分索引。
+   - 上传成功后在前端会话中提示用户文件已入库，并自动发送总结性问题（如“请根据上传的文件《xxx》进行总结”）。
+   - 后续用户提问继续走 `/api/ai/chat/stream` 或 `/api/ai/chat`，后端 `AiAssistantService` 会自动进行 RAG 前置检索。
+   - 上传过程需显示 loading，失败时给出明确提示，不影响当前会话。
 
 ---
 

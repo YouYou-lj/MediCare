@@ -11,7 +11,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * Web MVC 配置 — 注册认证拦截器 + 跨域配置
  * <p>
  * 拦截规则：拦截 /api/** 下所有请求，排除 /api/auth/login 和 /api/auth/logout；
- * 跨域：允许 localhost 任意端口的前端访问，支持 Cookie（Session 需要 withCredentials）
+ * 跨域：允许 localhost / 127.0.0.1 / IPv6 loopback 任意端口的前端访问，
+ * 支持 Cookie（Session 需要 withCredentials）
  */
 @Configuration
 @RequiredArgsConstructor
@@ -32,8 +33,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOriginPatterns("http://localhost:*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedOriginPatterns(
+                        "http://localhost:*",
+                        "http://127.0.0.1:*",
+                        "http://[::1]:*"
+                )
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);

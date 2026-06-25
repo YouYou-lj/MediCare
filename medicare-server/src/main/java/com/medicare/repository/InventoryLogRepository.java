@@ -15,7 +15,7 @@ public interface InventoryLogRepository extends JpaRepository<InventoryLog, Long
     /**
      * 查询库存日志（带药品名称）
      */
-    @Query(value = "SELECT il.id, il.medicine_id AS medicineId, il.type, il.quantity, "
+    @Query(value = "SELECT il.id, il.code, il.medicine_id AS medicineId, il.type, il.quantity, "
             + "il.batch_no AS batchNo, il.expiry_date AS expiryDate, il.operator, il.remark, "
             + "il.log_time AS logTime, m.name AS medicineName "
             + "FROM inventory_log il LEFT JOIN medicine m ON il.medicine_id = m.id "

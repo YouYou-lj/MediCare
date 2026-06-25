@@ -18,7 +18,12 @@
         router
         class="main-menu"
       >
-        <el-menu-item v-for="item in menuItems" :key="item.path" :index="item.path">
+        <el-menu-item
+          v-for="item in menuItems"
+          :key="item.path"
+          :index="item.path"
+          :class="'menu-item-' + item.path.replace('/', '')"
+        >
           <el-icon><component :is="item.icon" /></el-icon>
           <template #title>{{ item.title }}</template>
         </el-menu-item>
@@ -254,9 +259,9 @@ onUnmounted(() => {
 }
 .page-container {
   padding: var(--content-padding);
-  max-width: var(--page-max-width);
-  margin: 0 auto;
+  width: 100%;
   min-height: calc(100vh - var(--header-height));
+  box-sizing: border-box;
 }
 
 /* ===== 路由过渡动画 ===== */
@@ -289,6 +294,15 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
+  .sidebar:not(.sidebar-mobile) {
+    width: 64px !important;
+    flex: 0 0 64px !important;
+  }
+
+  .sidebar:not(.sidebar-mobile) .logo-text {
+    display: none;
+  }
+
   .header {
     padding: 0 12px;
   }

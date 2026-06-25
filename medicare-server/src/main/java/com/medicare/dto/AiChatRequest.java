@@ -22,4 +22,7 @@ public class AiChatRequest {
 
     @Schema(description = "当前页面上下文，如 route、patientId、recordId 等")
     private Map<String, Object> context;
+
+    @Schema(description = "用户上传并关联本轮对话的文件 sourcePath，RAG 检索将优先/限定该文件")
+    private String fileSourcePath;
 }

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
  */
 public interface DoctorVO {
     Long getId();
+    String getCode();
     String getName();
     Long getDepartmentId();
     String getTitle();

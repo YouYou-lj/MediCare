@@ -2,103 +2,169 @@
   <div class="settings-view">
     <PageHeader title="系统设置" subtitle="用户管理与个人密码修改" />
 
-    <el-card shadow="hover" class="data-card">
-      <el-tabs v-model="activeTab" type="border-card">
-        <!-- 用户管理 Tab（仅 admin 可见） -->
-        <el-tab-pane v-if="userStore.hasRole('admin')" label="用户管理" name="users">
-          <DataToolbar show-add add-label="新增用户" @add="openUserDialog()">
-            <template #filters>
-              <el-input v-model="userKeyword" placeholder="搜索用户名/姓名" clearable style="width:200px" @input="filterUsers" />
+    <div class="settings-view__workspace" :class="{ 'settings-view__workspace--single': !userStore.hasRole('admin') }">
+      <el-card v-if="userStore.hasRole('admin')" shadow="hover" class="settings-view__panel settings-view__panel--users">
+        <template #header>
+          <div class="settings-view__panel-header">
+            <div class="settings-view__panel-title">
+              <el-icon><User /></el-icon>
+              <span>用户管理</span>
+            </div>
+            <span class="settings-view__panel-meta">共 {{ userList.length }} 个账号</span>
+          </div>
+        </template>
+
+        <div class="settings-view__stats">
+          <div class="settings-view__stat">
+            <span class="settings-view__stat-label">启用账号</span>
+            <strong>{{ enabledUserCount }}</strong>
+          </div>
+          <div class="settings-view__stat">
+            <span class="settings-view__stat-label">医生账号</span>
+            <strong>{{ doctorUserCount }}</strong>
+          </div>
+          <div class="settings-view__stat">
+            <span class="settings-view__stat-label">药师账号</span>
+            <strong>{{ pharmacistUserCount }}</strong>
+          </div>
+        </div>
+
+        <DataToolbar show-refresh show-add add-label="新增用户" @refresh="loadUsers" @add="openUserDialog()">
+          <template #filters>
+            <el-input v-model="userKeyword" placeholder="搜索用户名/姓名" clearable class="settings-view__filter-input" @input="filterUsers" />
+          </template>
+        </DataToolbar>
+
+        <div class="settings-view__table-wrap">
+          <el-table v-loading="userLoading" :data="filteredUserList" border stripe height="100%" :default-sort="{ prop: 'code', order: 'ascending' }">
+            <template #empty>
+              <EmptyState icon="Setting" title="暂无用户数据" description="点击右上角“新增用户”按钮添加" />
             </template>
-          </DataToolbar>
-          <el-table v-loading="userLoading" :data="filteredUserList" border stripe>
-            <el-table-column prop="id" label="ID" width="60" />
-            <el-table-column prop="username" label="用户名" width="120" />
-            <el-table-column prop="realName" label="姓名" width="120" />
-            <el-table-column prop="role" label="角色" width="100">
+            <el-table-column type="index" label="序号" width="60" align="center" />
+            <el-table-column prop="code" label="ID" width="120" align="center" fixed="left" />
+            <el-table-column prop="username" label="用户名" min-width="130" fixed="left" />
+            <el-table-column prop="realName" label="姓名" min-width="120" />
+            <el-table-column prop="role" label="角色" min-width="110" align="center">
               <template #default="{ row }">
                 <StatusTag :type="roleTagType(row.role)" :label="roleText(row.role)" />
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="80">
+            <el-table-column prop="status" label="状态" min-width="100" align="center" class-name="settings-view__tag-cell">
               <template #default="{ row }">
                 <StatusTag :type="row.status === 1 ? 'success' : 'danger'" :label="row.status === 1 ? '启用' : '禁用'" />
               </template>
             </el-table-column>
-            <el-table-column prop="doctorId" label="关联医生ID" width="110">
+            <el-table-column prop="doctorId" label="关联医生ID" min-width="120">
               <template #default="{ row }">{{ row.doctorId || '-' }}</template>
             </el-table-column>
             <el-table-column label="操作" width="160" fixed="right" align="center">
               <template #default="{ row }">
-                <div class="action-buttons">
+                <div class="settings-view__actions">
                   <el-button size="small" type="primary" @click="openUserDialog(row)">编辑</el-button>
                   <el-button size="small" type="danger" @click="handleDeleteUser(row)" :disabled="row.username === 'admin'">删除</el-button>
                 </div>
               </template>
             </el-table-column>
           </el-table>
-          <EmptyState v-if="!userLoading && filteredUserList.length === 0" icon="Setting" title="暂无用户数据" description="点击右上角“新增用户”按钮添加" />
+        </div>
+      </el-card>
 
-          <!-- 用户编辑弹窗 -->
-          <el-dialog v-model="userDialogVisible" :title="isEdit ? '编辑用户' : '新增用户'" width="480px" destroy-on-close>
-            <el-form ref="userFormRef" :model="userForm" :rules="userRules" label-width="90px">
-              <el-form-item label="用户名" prop="username">
-                <el-input v-model="userForm.username" :disabled="isEdit" placeholder="请输入用户名" />
-              </el-form-item>
-              <el-form-item v-if="!isEdit" label="密码" prop="password">
-                <el-input v-model="userForm.password" type="password" show-password placeholder="请输入密码" />
-              </el-form-item>
-              <el-form-item label="姓名" prop="realName">
-                <el-input v-model="userForm.realName" placeholder="请输入姓名" />
-              </el-form-item>
-              <el-form-item label="角色" prop="role">
-                <el-select v-model="userForm.role" placeholder="请选择角色" @change="onRoleChange">
-                  <el-option label="管理员" value="admin" />
-                  <el-option label="医生" value="doctor" />
-                  <el-option label="药剂师" value="pharmacist" />
-                </el-select>
-              </el-form-item>
-              <el-form-item v-if="userForm.role === 'doctor'" label="关联医生" prop="doctorId">
-                <el-select v-model="userForm.doctorId" placeholder="请选择关联医生" clearable>
-                  <el-option v-for="d in doctorOptions" :key="d.id" :label="d.name" :value="d.id" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="状态" prop="status">
-                <el-radio-group v-model="userForm.status">
-                  <el-radio :value="1">启用</el-radio>
-                  <el-radio :value="0">禁用</el-radio>
-                </el-radio-group>
-              </el-form-item>
-            </el-form>
-            <template #footer>
-              <el-button @click="userDialogVisible = false">取消</el-button>
-              <el-button type="primary" :loading="userSaveLoading" @click="handleSaveUser">保存</el-button>
-            </template>
-          </el-dialog>
-        </el-tab-pane>
+      <div class="settings-view__side">
+        <el-card shadow="hover" class="settings-view__panel settings-view__profile">
+          <template #header>
+            <div class="settings-view__panel-header">
+              <div class="settings-view__panel-title">
+                <el-icon><Setting /></el-icon>
+                <span>当前账号</span>
+              </div>
+              <StatusTag :type="userStore.currentUser?.status === 1 ? 'success' : 'info'" :label="userStore.currentUser?.status === 1 ? '启用' : '未知'" />
+            </div>
+          </template>
 
-        <!-- 修改密码 Tab -->
-        <el-tab-pane label="修改密码" name="password">
-          <div class="password-form-wrapper">
-            <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="100px" style="max-width: 420px">
-              <el-divider content-position="left">修改密码</el-divider>
-              <el-form-item label="当前密码" prop="oldPassword">
-                <el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="请输入当前密码" />
-              </el-form-item>
-              <el-form-item label="新密码" prop="newPassword">
-                <el-input v-model="pwdForm.newPassword" type="password" show-password placeholder="请输入新密码（至少6位）" />
-              </el-form-item>
-              <el-form-item label="确认新密码" prop="confirmPassword">
-                <el-input v-model="pwdForm.confirmPassword" type="password" show-password placeholder="请再次输入新密码" />
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" :loading="pwdLoading" @click="handleChangePassword">修改密码</el-button>
-              </el-form-item>
-            </el-form>
+          <div class="settings-view__profile-grid">
+            <div class="settings-view__profile-item">
+              <span>用户名</span>
+              <strong>{{ userStore.currentUser?.username || '-' }}</strong>
+            </div>
+            <div class="settings-view__profile-item">
+              <span>姓名</span>
+              <strong>{{ userStore.currentUser?.realName || '-' }}</strong>
+            </div>
+            <div class="settings-view__profile-item">
+              <span>角色</span>
+              <StatusTag :type="roleTagType(userStore.currentUser?.role || '')" :label="currentRoleName" />
+            </div>
+            <div class="settings-view__profile-item">
+              <span>关联医生</span>
+              <strong>{{ userStore.currentUser?.doctorId || '-' }}</strong>
+            </div>
           </div>
-        </el-tab-pane>
-      </el-tabs>
-    </el-card>
+        </el-card>
+
+        <el-card shadow="hover" class="settings-view__panel settings-view__password">
+          <template #header>
+            <div class="settings-view__panel-header">
+              <div class="settings-view__panel-title">
+                <el-icon><Lock /></el-icon>
+                <span>修改密码</span>
+              </div>
+              <span class="settings-view__panel-meta">账号安全</span>
+            </div>
+          </template>
+
+          <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="100px" class="settings-view__password-form">
+            <el-form-item label="当前密码" prop="oldPassword">
+              <el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="请输入当前密码" />
+            </el-form-item>
+            <el-form-item label="新密码" prop="newPassword">
+              <el-input v-model="pwdForm.newPassword" type="password" show-password placeholder="请输入新密码（至少6位）" />
+            </el-form-item>
+            <el-form-item label="确认新密码" prop="confirmPassword">
+              <el-input v-model="pwdForm.confirmPassword" type="password" show-password placeholder="请再次输入新密码" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :icon="Key" :loading="pwdLoading" @click="handleChangePassword">修改密码</el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </div>
+    </div>
+
+    <el-dialog v-model="userDialogVisible" :title="isEdit ? '编辑用户' : '新增用户'" width="480px" destroy-on-close>
+      <el-form ref="userFormRef" :model="userForm" :rules="userRules" label-width="90px">
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="userForm.username" :disabled="isEdit" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item v-if="!isEdit" label="密码" prop="password">
+          <el-input v-model="userForm.password" type="password" show-password placeholder="请输入密码" />
+        </el-form-item>
+        <el-form-item label="姓名" prop="realName">
+          <el-input v-model="userForm.realName" placeholder="请输入姓名" />
+        </el-form-item>
+        <el-form-item label="角色" prop="role">
+          <el-select v-model="userForm.role" placeholder="请选择角色" class="settings-view__form-control" @change="onRoleChange">
+            <el-option label="管理员" value="admin" />
+            <el-option label="医生" value="doctor" />
+            <el-option label="药剂师" value="pharmacist" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="userForm.role === 'doctor'" label="关联医生" prop="doctorId">
+          <el-select v-model="userForm.doctorId" placeholder="请选择关联医生" clearable class="settings-view__form-control">
+            <el-option v-for="d in doctorOptions" :key="d.id" :label="d.name" :value="d.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-radio-group v-model="userForm.status">
+            <el-radio :value="1">启用</el-radio>
+            <el-radio :value="0">禁用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="userDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="userSaveLoading" @click="handleSaveUser">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -106,6 +172,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { Key, Lock, Setting, User } from '@element-plus/icons-vue'
 import { useUserStore } from '../../stores/user'
 import { listUsers, createUser, updateUser, deleteUser, updatePassword } from '../../api/user'
 import { listDoctors } from '../../api/doctor'
@@ -116,7 +183,6 @@ import EmptyState from '../../components/EmptyState.vue'
 import StatusTag from '../../components/StatusTag.vue'
 
 const userStore = useUserStore()
-const activeTab = ref(userStore.hasRole('admin') ? 'users' : 'password')
 
 // ========== 用户管理 ==========
 const userList = ref<SysUser[]>([])
@@ -150,6 +216,10 @@ const filteredUserList = computed(() => {
   const k = userKeyword.value.toLowerCase()
   return userList.value.filter(u => u.username.toLowerCase().includes(k) || u.realName.toLowerCase().includes(k))
 })
+const enabledUserCount = computed(() => userList.value.filter(user => user.status === 1).length)
+const doctorUserCount = computed(() => userList.value.filter(user => user.role === 'doctor').length)
+const pharmacistUserCount = computed(() => userList.value.filter(user => user.role === 'pharmacist').length)
+const currentRoleName = computed(() => userStore.currentUser?.role ? roleText(userStore.currentUser.role) : '-')
 
 function filterUsers() {}
 
@@ -178,7 +248,8 @@ function openUserDialog(row?: SysUser) {
 }
 
 async function handleSaveUser() {
-  await userFormRef.value?.validate()
+  const valid = await userFormRef.value?.validate().catch(() => false)
+  if (!valid) return
   userSaveLoading.value = true
   try {
     if (isEdit.value) {
@@ -190,19 +261,24 @@ async function handleSaveUser() {
     }
     userDialogVisible.value = false
     loadUsers()
-  } catch {}
-  userSaveLoading.value = false
+  } catch {} finally {
+    userSaveLoading.value = false
+  }
 }
 
 async function handleDeleteUser(row: SysUser) {
   if (row.username === 'admin') return
-  await ElMessageBox.confirm(`确定要删除用户 "${row.realName}" 吗？删除后不可恢复`, '删除确认', { type: 'warning' })
-  try { await deleteUser(row.id); ElMessage.success('删除成功'); loadUsers() } catch {}
+  try {
+    await ElMessageBox.confirm(`确定要删除用户 "${row.realName}" 吗？删除后不可恢复`, '删除确认', { type: 'warning' })
+    await deleteUser(row.id)
+    ElMessage.success('删除成功')
+    loadUsers()
+  } catch {}
 }
 
 async function loadUsers() {
   userLoading.value = true
-  try { const res = await listUsers(); userList.value = res.data } catch {}
+  try { const res = await listUsers(); userList.value = res.data.sort((a, b) => (a.id ?? 0) - (b.id ?? 0)) } catch {}
   userLoading.value = false
 }
 
@@ -238,7 +314,8 @@ const pwdRules: FormRules = {
 }
 
 async function handleChangePassword() {
-  await pwdFormRef.value?.validate()
+  const valid = await pwdFormRef.value?.validate().catch(() => false)
+  if (!valid) return
   pwdLoading.value = true
   try {
     const userId = userStore.currentUser?.id
@@ -247,8 +324,9 @@ async function handleChangePassword() {
     ElMessage.success('密码修改成功，请重新登录')
     userStore.clearUser()
     window.location.href = '/login'
-  } catch {}
-  pwdLoading.value = false
+  } catch {} finally {
+    pwdLoading.value = false
+  }
 }
 
 onMounted(() => {
@@ -261,21 +339,227 @@ onMounted(() => {
 
 <style scoped>
 .settings-view {
+  height: max(560px, calc(100vh - var(--header-height) - var(--content-padding) * 2));
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   animation: fadeIn 0.4s ease-out;
 }
-.data-card {
-  border-radius: var(--radius-lg);
+
+.settings-view__workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.42fr);
+  gap: var(--space-xl);
+}
+
+.settings-view__workspace--single {
+  grid-template-columns: minmax(340px, 520px);
+}
+
+.settings-view__panel {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-card);
   overflow: hidden;
 }
-.password-form-wrapper {
-  padding: 20px 0;
+
+.settings-view__panel :deep(.el-card__header) {
+  flex-shrink: 0;
 }
-.action-buttons {
+
+.settings-view__panel :deep(.el-card__body) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg);
+}
+
+.settings-view__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.settings-view__panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.settings-view__panel-meta {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.settings-view__stats {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.settings-view__stat {
+  min-width: 0;
+  padding: var(--space-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-table);
+  background: var(--bg-toolbar);
+}
+
+.settings-view__stat-label {
+  display: block;
+  margin-bottom: var(--space-xs);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.settings-view__stat strong {
+  color: var(--text-primary);
+  font-size: var(--font-size-2xl);
+  line-height: 1.2;
+}
+
+.settings-view__table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings-view__table-wrap :deep(.el-table) {
+  width: 100%;
+}
+
+.settings-view__actions {
   display: flex;
   flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
   gap: 0;
   white-space: nowrap;
+}
+
+.settings-view__filter-input {
+  width: 220px;
+  flex: 0 0 220px;
+}
+
+.settings-view__side {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.settings-view__profile {
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.settings-view__password {
+  flex: 1;
+  min-height: 0;
+}
+
+.settings-view__profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.settings-view__profile-item {
+  min-width: 0;
+  padding: var(--space-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-table);
+  background: var(--bg-toolbar);
+}
+
+.settings-view__profile-item span {
+  display: block;
+  margin-bottom: var(--space-xs);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.settings-view__profile-item strong {
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.settings-view__password-form {
+  max-width: 460px;
+}
+
+.settings-view :deep(.settings-view__form-control) {
+  width: 100%;
+}
+
+.settings-view :deep(.settings-view__tag-cell .cell) {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .settings-view {
+    height: auto;
+    min-height: max(560px, calc(100vh - var(--header-height) - var(--content-padding) * 2));
+  }
+
+  .settings-view__workspace,
+  .settings-view__workspace--single {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-view__panel--users {
+    min-height: 620px;
+  }
+
+  .settings-view__table-wrap {
+    flex: none;
+    height: clamp(360px, 48vh, 560px);
+    min-height: 0;
+  }
+
+  .settings-view__side {
+    min-height: auto;
+  }
+
+  .settings-view__password {
+    flex: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .settings-view__stats,
+  .settings-view__profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-view__table-wrap {
+    height: 320px;
+  }
+
+  .settings-view__filter-input {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .settings-view__password-form {
+    max-width: none;
+  }
 }
 </style>

@@ -12,6 +12,7 @@ import java.util.List;
 public class PrescriptionVO {
 
     private Long id;
+    private String code;
     private Long recordId;
     private Long patientId;
     private Long doctorId;

@@ -17,7 +17,7 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     /**
      * 查询医生列表（带科室名称）
      */
-    @Query(value = "SELECT d.id, d.name, d.department_id AS departmentId, d.title, d.status, d.create_time AS createTime, "
+    @Query(value = "SELECT d.id, d.code, d.name, d.department_id AS departmentId, d.title, d.status, d.create_time AS createTime, "
             + "dep.name AS departmentName "
             + "FROM doctor d LEFT JOIN department dep ON d.department_id = dep.id "
             + "WHERE (:deptId IS NULL OR d.department_id = :deptId) "

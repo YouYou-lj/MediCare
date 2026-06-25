@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
  */
 public interface RegistrationVO {
     Long getId();
+    String getCode();
     Long getPatientId();
     Long getScheduleId();
     Long getDoctorId();

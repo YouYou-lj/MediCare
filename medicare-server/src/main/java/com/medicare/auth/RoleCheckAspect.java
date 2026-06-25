@@ -43,12 +43,12 @@ public class RoleCheckAspect {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
         SysUser currentUser = AuthInterceptor.getCurrentUser(request);
         if (currentUser == null) {
-            throw new BusinessException("未登录");
+            throw new BusinessException(401, "未登录，请先登录");
         }
 
         boolean hasRole = Arrays.asList(requiredRoles).contains(currentUser.getRole());
         if (!hasRole) {
-            throw new BusinessException("权限不足，需要角色：" + String.join("/", requiredRoles));
+            throw new BusinessException(403, "权限不足，需要角色：" + String.join("/", requiredRoles));
         }
 
         return joinPoint.proceed();
