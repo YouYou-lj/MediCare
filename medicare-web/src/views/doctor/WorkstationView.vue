@@ -41,12 +41,12 @@
             <template #empty>
               <EmptyState icon="User" title="暂无候诊患者" description="请选择医生查看今日候诊患者" />
             </template>
-            <el-table-column type="index" label="序号" width="60" align="center" />
+            <el-table-column type="index" label="序号" width="60" align="center" fixed="left" />
             <el-table-column prop="code" label="ID" width="120" align="center" fixed="left" />
-            <el-table-column prop="seqNo" label="排队号" width="76" fixed="left" />
-            <el-table-column prop="patientName" label="患者" min-width="120" />
-            <el-table-column prop="timeSlot" label="时段" min-width="90" />
-            <el-table-column prop="status" label="状态" min-width="110">
+            <el-table-column prop="seqNo" label="排队号" width="76" fixed="left" align="center" />
+            <el-table-column prop="patientName" label="患者" min-width="120" align="center" />
+            <el-table-column prop="timeSlot" label="时段" min-width="90" align="center" />
+            <el-table-column prop="status" label="状态" min-width="110" align="center">
               <template #default="{ row }">
                 <StatusTag :type="waitingStatusType(row.status)" :label="registrationStatusText(row.status)" />
               </template>

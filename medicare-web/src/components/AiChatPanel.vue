@@ -104,13 +104,18 @@
       <!-- 中间：AI 聊天面板 -->
       <div class="ai-chat">
         <header class="ai-chat__header">
-          <div>
+          <div class="ai-chat__brand">
+            <div class="ai-chat__mark" aria-hidden="true">
+              <el-icon><Service /></el-icon>
+            </div>
             <h3 class="ai-chat__title">MediCare AI 助手</h3>
+            <span class="ai-chat__pulse" aria-hidden="true" />
           </div>
-          <el-button circle text :icon="Close" @click="$emit('update:modelValue', false)" />
+          <el-button class="ai-chat__close" circle text :icon="Close" @click="$emit('update:modelValue', false)" />
         </header>
 
         <div ref="messageListRef" class="ai-chat__messages">
+          <div class="ai-chat__ambient" aria-hidden="true" />
           <div
             v-for="message in messages"
             :key="message.id"
@@ -159,6 +164,7 @@
           <el-button
             v-for="item in quickPrompts"
             :key="item"
+            class="ai-chat__quick-item"
             size="small"
             round
             @click="fillPrompt(item)"
@@ -784,21 +790,37 @@ async function openReference(ref: Reference) {
 </script>
 
 <style scoped>
+:global(.ai-chat-drawer) {
+  --el-drawer-padding-primary: 0;
+  overflow: hidden;
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
+  box-shadow: var(--shadow-dropdown);
+}
+
 .ai-chat-wrapper {
+  --ai-surface: var(--bg-card);
+  --ai-surface-soft: var(--bg-toolbar);
+  --ai-field: var(--bg-page);
+  --ai-line: var(--border-light);
+  --ai-accent: var(--color-primary);
+  --ai-accent-deep: var(--color-primary-dark);
+  --ai-accent-soft: var(--color-primary-light);
+  --ai-shadow-soft: var(--shadow-card);
+  --ai-shadow-lift: var(--shadow-card-hover);
   display: flex;
   height: 100%;
-  background: var(--bg-page);
+  background: var(--ai-field);
 }
 
 /* ===== 左侧整合侧边栏（现代医疗风） ===== */
 .side-panel {
-  width: 232px;
+  width: 248px;
   flex-shrink: 0;
   border-right: 1px solid var(--divider-color);
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+  background: linear-gradient(180deg, var(--ai-surface) 0%, var(--ai-surface-soft) 100%);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.28s ease;
   overflow: hidden;
 }
 
@@ -808,56 +830,57 @@ async function openReference(ref: Reference) {
 
 /* 展开状态：标题栏与 tab 合并为一行 */
 .side-panel__header {
-  height: 56px;
+  height: 64px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 0 12px 0 14px;
-  border-bottom: 1px solid var(--border-light);
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
+  gap: var(--space-sm);
+  padding: 0 var(--space-md) 0 var(--space-lg);
+  border-bottom: 1px solid var(--ai-line);
+  background: color-mix(in srgb, var(--ai-surface) 88%, transparent);
+  backdrop-filter: blur(10px);
 }
 
 .side-panel__tabs {
   flex: 1;
   min-width: 0;
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--bg-toolbar);
-  border-radius: 10px;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  background: var(--ai-field);
+  border: 1px solid var(--ai-line);
+  border-radius: var(--radius-card);
 }
 
 .side-panel__tab {
   flex: 1;
   min-width: 0;
-  height: 32px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 0 10px;
-  border-radius: 8px;
-  font-size: 13px;
+  gap: var(--space-xs);
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   white-space: nowrap;
   position: relative;
 }
 
 .side-panel__tab:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--ai-surface);
 }
 
 .side-panel__tab.active {
-  color: var(--color-primary);
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  color: var(--ai-accent);
+  background: var(--ai-surface);
+  box-shadow: var(--ai-shadow-soft);
   font-weight: 600;
 }
 
@@ -871,7 +894,7 @@ async function openReference(ref: Reference) {
   padding: 0 4px;
   border-radius: 8px;
   background: var(--color-danger);
-  color: #fff;
+  color: var(--text-inverse);
   font-size: 10px;
   font-weight: 600;
   line-height: 15px;
@@ -879,12 +902,12 @@ async function openReference(ref: Reference) {
 }
 
 .side-panel__collapse {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--radius-button);
   cursor: pointer;
   color: var(--text-muted);
   transition: all 0.2s ease;
@@ -900,20 +923,20 @@ async function openReference(ref: Reference) {
 .side-panel__body {
   flex: 1;
   overflow-y: auto;
-  padding: 14px;
+  padding: var(--space-lg);
 }
 
 .side-panel__new {
   justify-content: flex-start;
-  margin-bottom: 12px;
-  font-size: 13px;
+  margin-bottom: var(--space-md);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   width: 100%;
-  height: 34px;
-  border-radius: 8px;
+  height: 38px;
+  border-radius: var(--radius-card);
   border: 1px dashed var(--border-color);
-  color: var(--color-primary);
-  background: rgba(15, 159, 143, 0.04);
+  color: var(--ai-accent);
+  background: var(--ai-accent-soft);
   transition: all 0.2s ease;
 }
 
@@ -936,36 +959,36 @@ async function openReference(ref: Reference) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 14px 0;
-  gap: 14px;
+  padding: var(--space-lg) 0;
+  gap: var(--space-md);
 }
 
 .side-icon {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   cursor: pointer;
   color: var(--text-secondary);
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  background: var(--ai-surface);
+  box-shadow: var(--ai-shadow-soft);
   transition: all 0.2s ease;
 }
 
 .side-icon:hover,
 .side-icon.active {
-  color: var(--color-primary);
-  background: var(--color-primary-light);
-  box-shadow: 0 2px 6px rgba(15, 159, 143, 0.12);
+  color: var(--ai-accent);
+  background: var(--ai-accent-soft);
+  box-shadow: var(--ai-shadow-lift);
 }
 
 .side-icon--toggle {
   margin-top: auto;
   margin-bottom: 4px;
-  background: var(--bg-toolbar);
+  background: var(--ai-surface-soft);
 }
 
 .side-icon--toggle:hover {
@@ -981,12 +1004,12 @@ async function openReference(ref: Reference) {
   padding: 0 4px;
   border-radius: 9px;
   background: var(--color-danger);
-  color: #fff;
+  color: var(--text-inverse);
   font-size: 10px;
   font-weight: 600;
   line-height: 17px;
   text-align: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--ai-shadow-soft);
 }
 
 .session-item,
@@ -995,26 +1018,26 @@ async function openReference(ref: Reference) {
   align-items: center;
   gap: 10px;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: 6px;
-  background: #ffffff;
+  background: var(--ai-surface);
   border: 1px solid transparent;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--ai-shadow-soft);
 }
 
 .session-item:hover,
 .session-item.active,
 .ref-item:hover {
-  background: #ffffff;
-  border-color: var(--color-primary-light);
-  box-shadow: 0 2px 8px rgba(15, 159, 143, 0.08);
+  background: var(--ai-surface);
+  border-color: var(--ai-accent-soft);
+  box-shadow: var(--ai-shadow-lift);
 }
 
 .session-item.active {
-  background: var(--color-primary-light);
-  border-color: rgba(15, 159, 143, 0.15);
+  background: var(--ai-accent-soft);
+  border-color: var(--ai-accent-soft);
 }
 
 .session-item__icon,
@@ -1024,9 +1047,9 @@ async function openReference(ref: Reference) {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  color: var(--color-primary);
-  background: rgba(15, 159, 143, 0.08);
+  border-radius: var(--radius-button);
+  color: var(--ai-accent);
+  background: var(--ai-accent-soft);
   flex-shrink: 0;
 }
 
@@ -1083,45 +1106,117 @@ async function openReference(ref: Reference) {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--bg-page);
+  background: var(--ai-field);
 }
 
 .ai-chat__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-md) var(--space-lg);
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid var(--border-light);
-  backdrop-filter: blur(8px);
+  min-height: 70px;
+  padding: var(--space-md) var(--space-2xl);
+  background:
+    linear-gradient(90deg, var(--ai-surface) 0%, color-mix(in srgb, var(--ai-surface) 82%, var(--ai-accent-soft)) 100%);
+  border-bottom: 1px solid var(--ai-line);
+  backdrop-filter: blur(10px);
+}
+
+.ai-chat__brand {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--space-sm);
+}
+
+.ai-chat__mark {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-card);
+  color: var(--text-inverse);
+  background: linear-gradient(135deg, var(--ai-accent) 0%, var(--ai-accent-deep) 100%);
+  box-shadow: var(--ai-shadow-lift);
 }
 
 .ai-chat__title {
   margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
   color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  line-height: 1.2;
 }
 
-.ai-chat__title::before {
+.ai-chat__pulse {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: var(--radius-circle);
+  background: var(--ai-accent);
+  box-shadow: 0 0 0 4px var(--ai-accent-soft);
+}
+
+.ai-chat__pulse::after {
   content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
+  position: absolute;
+  inset: -7px;
+  border-radius: inherit;
+  border: 1px solid var(--ai-accent);
+  opacity: 0;
+  animation: aiPulse 2.2s ease-out infinite;
+}
+
+.ai-chat__close {
+  color: var(--text-secondary);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.ai-chat__close:hover {
+  color: var(--text-primary);
+  background: var(--ai-accent-soft);
+  transform: rotate(90deg);
 }
 
 .ai-chat__messages {
+  position: relative;
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-lg);
+  padding: var(--space-2xl);
+  background:
+    radial-gradient(circle at 12% 8%, var(--ai-accent-soft) 0, transparent 28%),
+    linear-gradient(180deg, var(--bg-page) 0%, var(--ai-surface-soft) 100%);
+}
+
+.ai-chat__ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.46;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--border-color) 58%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--border-color) 58%, transparent) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(180deg, transparent 0%, var(--text-primary) 16%, var(--text-primary) 82%, transparent 100%);
+}
+
+.ai-chat__ambient::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--ai-accent) 50%, transparent 100%);
+  opacity: 0.34;
+  animation: aiScan 7s ease-in-out infinite;
 }
 
 .ai-chat__message {
+  position: relative;
+  z-index: 1;
   display: flex;
   gap: var(--space-sm);
   margin-bottom: var(--space-lg);
@@ -1139,6 +1234,28 @@ async function openReference(ref: Reference) {
   }
 }
 
+@keyframes aiPulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.6);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@keyframes aiScan {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(420px);
+  }
+}
+
 .ai-chat__message--user {
   flex-direction: row-reverse;
 }
@@ -1151,28 +1268,30 @@ async function openReference(ref: Reference) {
   justify-content: center;
   flex-shrink: 0;
   border-radius: var(--radius-circle);
-  color: #ffffff;
+  color: var(--text-inverse);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  box-shadow: 0 2px 6px rgba(15, 159, 143, 0.2);
+  box-shadow: var(--ai-shadow-lift);
 }
 
 .ai-chat__message--user .ai-chat__avatar {
-  background: linear-gradient(135deg, var(--color-success) 0%, #0d9488 100%);
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--ai-accent-deep) 100%);
+  box-shadow: var(--ai-shadow-lift);
 }
 
 .ai-chat__bubble {
   max-width: 78%;
   padding: 12px 14px;
-  border-radius: 14px;
-  background: #ffffff;
-  border: 1px solid var(--border-light);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: box-shadow 0.2s ease;
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--ai-surface) 94%, transparent);
+  border: 1px solid var(--ai-line);
+  box-shadow: var(--ai-shadow-soft);
+  backdrop-filter: blur(8px);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .ai-chat__bubble:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--ai-shadow-lift);
+  transform: translateY(-1px);
 }
 
 .ai-chat__file-tag {
@@ -1182,8 +1301,8 @@ async function openReference(ref: Reference) {
   margin-bottom: var(--space-sm);
   padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-button);
-  background: rgba(15, 159, 143, 0.1);
-  color: var(--color-primary-dark);
+  background: var(--ai-accent-soft);
+  color: var(--ai-accent-deep);
   font-size: var(--font-size-xs);
   max-width: 100%;
 }
@@ -1196,15 +1315,15 @@ async function openReference(ref: Reference) {
 }
 
 .ai-chat__message--user .ai-chat__file-tag {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--text-inverse) 20%, transparent);
+  color: var(--text-inverse);
 }
 
 .ai-chat__message--user .ai-chat__bubble {
-  color: #fff;
+  color: var(--text-inverse);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   border-color: transparent;
-  box-shadow: 0 3px 10px rgba(15, 159, 143, 0.2);
+  box-shadow: var(--ai-shadow-lift);
 }
 
 .ai-chat__content {
@@ -1215,7 +1334,7 @@ async function openReference(ref: Reference) {
 }
 
 .ai-chat__message--user .ai-chat__content {
-  color: #ffffff;
+  color: var(--text-inverse);
 }
 
 .ai-chat__content--markdown {
@@ -1246,7 +1365,7 @@ async function openReference(ref: Reference) {
 }
 
 .ai-chat__message--user .ai-chat__content--markdown :deep(strong) {
-  color: #ffffff;
+  color: var(--text-inverse);
 }
 
 .ai-chat__content--markdown :deep(code) {
@@ -1258,8 +1377,8 @@ async function openReference(ref: Reference) {
 }
 
 .ai-chat__message--user .ai-chat__content--markdown :deep(code) {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-inverse);
+  background: color-mix(in srgb, var(--text-inverse) 20%, transparent);
 }
 
 .ai-chat__content--markdown :deep(blockquote) {
@@ -1301,7 +1420,7 @@ async function openReference(ref: Reference) {
   cursor: pointer;
   text-decoration: none;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-tag);
   background: var(--color-primary-light);
   font-size: 12px;
   transition: all 0.2s ease;
@@ -1309,7 +1428,7 @@ async function openReference(ref: Reference) {
 
 .ai-chat__ref-link:hover {
   color: var(--color-primary-dark);
-  background: rgba(15, 159, 143, 0.15);
+  background: var(--ai-accent-soft);
 }
 
 .ai-chat__content--markdown :deep(.ai-citation) {
@@ -1323,7 +1442,7 @@ async function openReference(ref: Reference) {
   font-size: 11px;
   font-weight: 600;
   text-align: center;
-  color: #fff;
+  color: var(--text-inverse);
   background: var(--color-primary);
   cursor: pointer;
   user-select: none;
@@ -1493,61 +1612,82 @@ async function openReference(ref: Reference) {
 .ai-chat__quick {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 0 var(--space-lg) var(--space-md);
+  gap: var(--space-md);
+  padding: 0 var(--space-2xl) var(--space-md);
+  background: linear-gradient(180deg, transparent 0%, var(--ai-surface) 100%);
 }
 
-.ai-chat__quick .el-button {
+.ai-chat__quick .ai-chat__quick-item {
   width: 100%;
+  min-width: 0;
+  margin-left: 0;
   justify-content: center;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  height: 38px;
-  padding: 0 14px;
-  border-radius: 19px;
+  height: 42px;
+  padding: 0 var(--space-lg);
+  border-radius: var(--radius-card);
   border: 1px solid var(--border-color);
-  background: #ffffff;
+  background: var(--ai-surface);
   color: var(--text-secondary);
-  font-size: 13px;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  box-shadow: var(--ai-shadow-soft);
 }
 
-.ai-chat__quick .el-button:hover {
-  color: var(--color-primary);
-  border-color: var(--color-primary-light);
-  background: var(--color-primary-light);
-  box-shadow: 0 3px 10px rgba(15, 159, 143, 0.1);
+.ai-chat__quick .ai-chat__quick-item + .ai-chat__quick-item {
+  margin-left: 0;
+}
+
+.ai-chat__quick .ai-chat__quick-item:hover {
+  color: var(--ai-accent);
+  border-color: var(--ai-accent-soft);
+  background: var(--ai-accent-soft);
+  box-shadow: var(--ai-shadow-lift);
   transform: translateY(-1px);
 }
 
-.ai-chat__quick .el-button > span {
+.ai-chat__quick :deep(.ai-chat__quick-item > span) {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-chat__quick :deep(.ai-chat__quick-item > span span) {
   display: block;
   width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ai-chat__footer {
-  padding: var(--space-md) var(--space-lg) var(--space-lg);
-  background: #ffffff;
-  border-top: 1px solid var(--border-light);
+  padding: var(--space-md) var(--space-2xl) var(--space-lg);
+  background: var(--ai-surface);
+  border-top: 1px solid var(--ai-line);
 }
 
-.ai-chat__footer .el-textarea__inner {
-  border-radius: 12px;
+.ai-chat__footer :deep(.el-textarea__inner) {
+  border-radius: var(--radius-card);
   padding: 12px 14px;
-  background: var(--bg-toolbar);
+  background: var(--ai-field);
   border: 1px solid var(--border-color);
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   font-size: var(--font-size-base);
   line-height: 1.6;
 }
 
-.ai-chat__footer .el-textarea__inner:focus {
-  background: #ffffff;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
+.ai-chat__footer :deep(.el-textarea__inner:focus) {
+  background: var(--ai-surface);
+  border-color: var(--ai-accent);
+  box-shadow: 0 0 0 3px var(--ai-accent-soft);
 }
 
 .ai-chat__actions {
@@ -1569,16 +1709,16 @@ async function openReference(ref: Reference) {
 }
 
 .ai-chat__upload-btn {
-  border-radius: 8px;
+  border-radius: var(--radius-card);
   padding: 0 12px;
-  height: 32px;
+  height: 36px;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .ai-chat__upload-btn:not(:disabled):hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(15, 159, 143, 0.12);
+  box-shadow: var(--ai-shadow-lift);
 }
 
 .ai-chat__uploaded-file-bar {
@@ -1594,7 +1734,7 @@ async function openReference(ref: Reference) {
   background: var(--color-primary-light);
   color: var(--color-primary-dark);
   font-size: var(--font-size-sm);
-  border: 1px solid rgba(15, 159, 143, 0.2);
+  border: 1px solid var(--ai-accent-soft);
   transition: all 0.2s ease;
 }
 
@@ -1636,9 +1776,21 @@ async function openReference(ref: Reference) {
 
 .ai-chat__actions .el-button--primary {
   min-width: 80px;
-  border-radius: 8px;
+  border-radius: var(--radius-card);
   height: 36px;
   font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-chat__message,
+  .ai-chat__pulse::after,
+  .ai-chat__ambient::after,
+  .ai-chat__close,
+  .ai-chat__bubble,
+  .ai-chat__quick .ai-chat__quick-item {
+    animation: none;
+    transition: none;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1648,7 +1800,7 @@ async function openReference(ref: Reference) {
     top: 0;
     bottom: 0;
     z-index: 10;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-sidebar);
   }
 
   .side-panel.collapsed {
@@ -1680,6 +1832,38 @@ async function openReference(ref: Reference) {
   .ai-chat__quick {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+    padding-right: var(--space-lg);
+    padding-left: var(--space-lg);
+  }
+
+  .ai-chat__header,
+  .ai-chat__messages,
+  .ai-chat__footer {
+    padding-right: var(--space-lg);
+    padding-left: var(--space-lg);
+  }
+
+  .ai-chat__title {
+    font-size: var(--font-size-xl);
+  }
+
+  .ai-chat__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ai-chat__actions-left {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 540px) {
+  .ai-chat__quick {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-chat__quick .ai-chat__quick-item {
+    height: 40px;
   }
 }
 </style>

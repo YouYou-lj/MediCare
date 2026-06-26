@@ -86,6 +86,27 @@ public class DataMigrationRunner implements CommandLineRunner {
         addIndexIfAbsent("knowledge_chunk", "idx_knowledge_chunk_vector_id",
                 "ALTER TABLE knowledge_chunk ADD UNIQUE INDEX idx_knowledge_chunk_vector_id (vector_id)");
         dropColumnIfAbsent("knowledge_chunk", "embedding");
+        ensureKnowledgeDocumentUploadedBy();
+    }
+
+    private void ensureKnowledgeDocumentUploadedBy() {
+        addColumnIfAbsent("knowledge_document", "uploaded_by",
+                "ALTER TABLE knowledge_document ADD COLUMN uploaded_by BIGINT DEFAULT NULL COMMENT '文档上传用户ID' AFTER status");
+        // 历史系统文件归为主管理员（id=1）上传
+        jdbcTemplate.update("""
+                UPDATE knowledge_document
+                SET uploaded_by = 1
+                WHERE uploaded_by IS NULL
+                  AND source_path NOT LIKE 'uploads/%'
+                  AND source_path NOT LIKE 'assistant-uploads/%'
+                """);
+        // 历史用户上传文件无法确定上传者，暂归为主管理员，后续由业务层按实际上传者覆盖
+        jdbcTemplate.update("""
+                UPDATE knowledge_document
+                SET uploaded_by = 1
+                WHERE uploaded_by IS NULL
+                  AND (source_path LIKE 'uploads/%' OR source_path LIKE 'assistant-uploads/%')
+                """);
     }
 
     private void ensureAiChatTables() {

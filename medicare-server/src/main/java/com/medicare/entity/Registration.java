@@ -11,7 +11,9 @@ import java.time.LocalDateTime;
  */
 @Data
 @Entity
-@Table(name = "registration")
+@Table(name = "registration", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_reg_schedule_seq", columnNames = {"schedule_id", "seq_no"})
+})
 public class Registration {
 
     public static final int STATUS_WAITING = 0;
@@ -42,7 +44,7 @@ public class Registration {
     @Column(nullable = false)
     private Integer status = 0;
 
-    @Column(name = "seq_no")
+    @Column(name = "seq_no", nullable = false)
     private Integer seqNo;
 
     @Column(precision = 10, scale = 2)

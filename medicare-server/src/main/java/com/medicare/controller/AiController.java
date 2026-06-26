@@ -64,10 +64,14 @@ public class AiController {
         if (currentUser == null) {
             throw new BusinessException(401, "未登录，请先登录");
         }
-        if (!currentUser.isAdmin()) {
-            throw new BusinessException(403, "只有管理员可以重建知识库");
+        if (!isMainAdmin(currentUser)) {
+            throw new BusinessException(403, "只有主管理员可以重建系统知识库");
         }
-        return Result.ok(ragService.reindex(resolveProjectRoot()));
+        return Result.ok(ragService.reindex(resolveProjectRoot(), currentUser.getId()));
+    }
+
+    private boolean isMainAdmin(SysUser user) {
+        return user != null && user.getId() != null && user.getId() == 1L;
     }
 
     @PostMapping("/rag/query")

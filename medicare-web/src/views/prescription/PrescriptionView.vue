@@ -35,9 +35,9 @@
             </template>
             <el-table-column type="index" label="序号" width="60" align="center" fixed="left" />
             <el-table-column prop="code" label="ID" width="120" align="center" />
-            <el-table-column prop="seqNo" label="排队号" width="76" />
-            <el-table-column prop="patientName" label="患者" min-width="120" />
-            <el-table-column prop="doctorName" label="医生" min-width="120">
+            <el-table-column prop="seqNo" label="排队号" width="76" align="center" />
+            <el-table-column prop="patientName" label="患者" min-width="120" align="center" />
+            <el-table-column prop="doctorName" label="医生" min-width="120" align="center">
               <template #header>
                 <div class="table-filter-header">
                   <span>医生</span>
@@ -56,7 +56,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="departmentName" label="科室" min-width="120">
+            <el-table-column prop="departmentName" label="科室" min-width="120" align="center">
               <template #header>
                 <div class="table-filter-header">
                   <span>科室</span>
@@ -75,7 +75,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="timeSlot" label="时段" min-width="90">
+            <el-table-column prop="timeSlot" label="时段" min-width="90" align="center">
               <template #header>
                 <div class="table-filter-header">
                   <span>时段</span>
@@ -189,12 +189,12 @@
                       </div>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="medicineSpec" label="规格" min-width="110" />
-                  <el-table-column prop="quantity" label="数量" width="76" />
-                  <el-table-column prop="unitPrice" label="单价" width="90">
+                  <el-table-column prop="medicineSpec" label="规格" min-width="110" align="center" />
+                  <el-table-column prop="quantity" label="数量" width="76" align="center" />
+                  <el-table-column prop="unitPrice" label="单价" width="90" align="center">
                     <template #default="{ row }">{{ formatMoney(row.unitPrice) }}</template>
                   </el-table-column>
-                  <el-table-column prop="amount" label="金额" width="90">
+                  <el-table-column prop="amount" label="金额" width="90" align="center">
                     <template #default="{ row }">{{ formatMoney(row.amount) }}</template>
                   </el-table-column>
                   <el-table-column prop="usageDesc" label="用法" min-width="160" />
@@ -247,13 +247,13 @@
                       </div>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="medicineSpec" label="规格" min-width="110" />
-                  <el-table-column prop="quantity" label="数量" width="76" />
-                  <el-table-column prop="unitPrice" label="单价" width="90">
+                  <el-table-column prop="medicineSpec" label="规格" min-width="110" align="center" />
+                  <el-table-column prop="quantity" label="数量" width="76" align="center" />
+                  <el-table-column prop="unitPrice" label="单价" width="90" align="center">
                     <template #default="{ row }">{{ formatMoney(row.unitPrice) }}</template>
                   </el-table-column>
                   <el-table-column prop="usageDesc" label="用法" min-width="160" />
-                  <el-table-column prop="amount" label="金额" width="90" fixed="right">
+                  <el-table-column prop="amount" label="金额" width="90" fixed="right" align="center">
                     <template #default="{ row }">{{ formatMoney(row.amount) }}</template>
                   </el-table-column>
                 </el-table>

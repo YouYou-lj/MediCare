@@ -66,35 +66,30 @@ public class RagService {
     @Transactional(readOnly = true)
     public List<KnowledgeDocumentResponse> listDocuments() {
         return documentRepository.findTop20ByOrderByUpdateTimeDesc().stream()
-                .map(document -> KnowledgeDocumentResponse.builder()
-                        .id(document.getId())
-                        .filename(document.getTitle())
-                        .sourcePath(document.getSourcePath())
-                        .sourceType(document.getSourceType())
-                        .chunkCount(document.getChunkCount())
-                        .status(document.getStatus())
-                        .isSystem(isSystemSourcePath(document.getSourcePath()))
-                        .createTime(document.getCreateTime())
-                        .updateTime(document.getUpdateTime())
-                        .build())
+                .map(this::toDocumentResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<KnowledgeDocumentResponse> listAllDocuments() {
         return documentRepository.findByStatus(1).stream()
-                .map(document -> KnowledgeDocumentResponse.builder()
-                        .id(document.getId())
-                        .filename(document.getTitle())
-                        .sourcePath(document.getSourcePath())
-                        .sourceType(document.getSourceType())
-                        .chunkCount(document.getChunkCount())
-                        .status(document.getStatus())
-                        .isSystem(isSystemSourcePath(document.getSourcePath()))
-                        .createTime(document.getCreateTime())
-                        .updateTime(document.getUpdateTime())
-                        .build())
+                .map(this::toDocumentResponse)
                 .toList();
+    }
+
+    private KnowledgeDocumentResponse toDocumentResponse(KnowledgeDocument document) {
+        return KnowledgeDocumentResponse.builder()
+                .id(document.getId())
+                .filename(document.getTitle())
+                .sourcePath(document.getSourcePath())
+                .sourceType(document.getSourceType())
+                .chunkCount(document.getChunkCount())
+                .status(document.getStatus())
+                .isSystem(isSystemSourcePath(document.getSourcePath()))
+                .uploadedBy(document.getUploadedBy())
+                .createTime(document.getCreateTime())
+                .updateTime(document.getUpdateTime())
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -112,17 +107,18 @@ public class RagService {
                 .chunkCount(document.getChunkCount())
                 .status(document.getStatus())
                 .isSystem(isSystem)
+                .uploadedBy(document.getUploadedBy())
                 .createTime(document.getCreateTime())
                 .updateTime(document.getUpdateTime())
                 .build();
     }
 
     @Transactional
-    public void deleteDocument(Long id) {
+    public void deleteDocument(Long id, boolean allowSystem) {
         KnowledgeDocument document = documentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(404, "文档不存在"));
         boolean isSystem = isSystemSourcePath(document.getSourcePath());
-        if (isSystem) {
+        if (isSystem && !allowSystem) {
             throw new BusinessException(403, "系统内置文档不可删除");
         }
         List<KnowledgeChunk> chunks = chunkRepository.findByDocumentId(document.getId());
@@ -139,7 +135,7 @@ public class RagService {
         log.info("知识库文档已删除: id={}, title={}", id, document.getTitle());
     }
 
-    public KnowledgeDocumentResponse updateDocument(Long id, String content) {
+    public KnowledgeDocumentResponse updateDocument(Long id, String content, boolean allowSystem) {
         if (content == null || content.isBlank()) {
             throw new BusinessException(400, "文档内容不能为空");
         }
@@ -147,13 +143,16 @@ public class RagService {
                 .orElseThrow(() -> new BusinessException(404, "文档不存在"));
         String sourcePath = document.getSourcePath();
         boolean isSystem = isSystemSourcePath(sourcePath);
-        if (isSystem) {
+        if (isSystem && !allowSystem) {
             throw new BusinessException(403, "系统内置文档不可编辑");
         }
         String sourceType = document.getSourceType();
         String title = document.getTitle();
         try {
-            IndexResult result = indexContent(title, sourcePath, sourceType, content, true);
+            if (isSystem) {
+                writeSystemSourceFile(sourcePath, content);
+            }
+            IndexResult result = indexContent(title, sourcePath, sourceType, content, true, document.getUploadedBy());
             return KnowledgeDocumentResponse.builder()
                     .id(document.getId())
                     .filename(title)
@@ -168,6 +167,29 @@ public class RagService {
         } catch (Exception e) {
             throw new BusinessException(500, "文档更新失败：" + e.getMessage());
         }
+    }
+
+    private void writeSystemSourceFile(String sourcePath, String content) {
+        Path projectRoot = resolveProjectRoot();
+        Path file = projectRoot.resolve(sourcePath);
+        try {
+            Files.writeString(file, content, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new BusinessException(500, "写入系统源文件失败：" + e.getMessage());
+        }
+    }
+
+    private Path resolveProjectRoot() {
+        Path current = Path.of(System.getProperty("user.dir")).toAbsolutePath();
+        if (current.getFileName() != null && "medicare-server".equals(current.getFileName().toString())) {
+            Path parent = current.getParent();
+            return parent == null ? current : parent;
+        }
+        if (current.resolve("medicare-server").toFile().exists()) {
+            return current;
+        }
+        Path parent = current.getParent();
+        return parent == null ? current : parent;
     }
 
     private String buildDocumentContent(Long documentId) {
@@ -242,7 +264,7 @@ public class RagService {
         }
     }
 
-    public RagReindexResponse reindex(Path projectRoot) {
+    public RagReindexResponse reindex(Path projectRoot, Long uploadedBy) {
         // 1. 清空向量数据库与关系库中的旧系统文档
         clearSystemDocuments();
 
@@ -256,7 +278,7 @@ public class RagService {
         List<String> failures = new ArrayList<>();
         for (Path file : files) {
             try {
-                IndexResult result = indexSystemFile(projectRoot, file, sequence++);
+                IndexResult result = indexSystemFile(projectRoot, file, sequence++, uploadedBy);
                 if (result.updated()) documents++;
                 chunks += result.chunkCount();
             } catch (Exception e) {
@@ -277,7 +299,7 @@ public class RagService {
                 .build();
     }
 
-    private IndexResult indexSystemFile(Path projectRoot, Path file, int sequence) {
+    private IndexResult indexSystemFile(Path projectRoot, Path file, int sequence, Long uploadedBy) {
         try {
             String content = normalizeContent(file, Files.readString(file, StandardCharsets.UTF_8));
             if (content.isBlank()) {
@@ -286,13 +308,13 @@ public class RagService {
             String sourcePath = projectRoot.relativize(file).toString();
             String basename = file.getFileName().toString();
             String title = String.format("SYS-%03d - %s", sequence, basename);
-            return indexContent(title, sourcePath, resolveSourceType(file), content, true);
+            return indexContent(title, sourcePath, resolveSourceType(file), content, true, uploadedBy);
         } catch (Exception e) {
             throw new RuntimeException("知识库文档处理失败: " + file, e);
         }
     }
 
-    public KnowledgeUploadResponse uploadDocument(MultipartFile file) {
+    public KnowledgeUploadResponse uploadDocument(MultipartFile file, Long uploadedBy) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(400, "请选择要上传的知识库文档");
         }
@@ -307,7 +329,7 @@ public class RagService {
         String sourceType = documentTextExtractionService.resolveSourceType(filename);
         String sourcePath = "uploads/" + System.currentTimeMillis() + "-" + sanitizeFilename(filename);
         try {
-            IndexResult result = indexContent(filename, sourcePath, sourceType, content, true);
+            IndexResult result = indexContent(filename, sourcePath, sourceType, content, true, uploadedBy);
             return KnowledgeUploadResponse.builder()
                     .filename(filename)
                     .sourcePath(sourcePath)
@@ -322,7 +344,7 @@ public class RagService {
         }
     }
 
-    public KnowledgeUploadResponse uploadDocumentForAssistant(MultipartFile file) {
+    public KnowledgeUploadResponse uploadDocumentForAssistant(MultipartFile file, Long uploadedBy) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(400, "请选择要上传的文件");
         }
@@ -337,7 +359,7 @@ public class RagService {
         String sourceType = documentTextExtractionService.resolveSourceType(filename);
         String sourcePath = "assistant-uploads/" + System.currentTimeMillis() + "-" + sanitizeFilename(filename);
         try {
-            IndexResult result = indexContent(filename, sourcePath, sourceType, content, true);
+            IndexResult result = indexContent(filename, sourcePath, sourceType, content, true, uploadedBy);
             return KnowledgeUploadResponse.builder()
                     .filename(filename)
                     .sourcePath(sourcePath)
@@ -352,11 +374,11 @@ public class RagService {
         }
     }
 
-    public KnowledgeUploadResponse uploadSystemDocument(MultipartFile file, Path projectRoot) {
-        return processSystemFile(file, projectRoot, nextSystemUploadSequence());
+    public KnowledgeUploadResponse uploadSystemDocument(MultipartFile file, Path projectRoot, Long uploadedBy) {
+        return processSystemFile(file, projectRoot, nextSystemUploadSequence(), uploadedBy);
     }
 
-    public KnowledgeSystemUploadBatchResponse uploadSystemDocuments(List<MultipartFile> files, Path projectRoot) {
+    public KnowledgeSystemUploadBatchResponse uploadSystemDocuments(List<MultipartFile> files, Path projectRoot, Long uploadedBy) {
         if (files == null || files.isEmpty()) {
             throw new BusinessException(400, "请选择要上传的系统文件");
         }
@@ -372,7 +394,7 @@ public class RagService {
             }
             String filename = Optional.ofNullable(file.getOriginalFilename()).orElse("document").trim();
             try {
-                KnowledgeUploadResponse response = processSystemFile(file, projectRoot, sequence++);
+                KnowledgeUploadResponse response = processSystemFile(file, projectRoot, sequence++, uploadedBy);
                 results.add(response);
                 successCount++;
                 totalChunkCount += Optional.ofNullable(response.getChunkCount()).orElse(0);
@@ -410,7 +432,7 @@ public class RagService {
                 .build();
     }
 
-    private KnowledgeUploadResponse processSystemFile(MultipartFile file, Path projectRoot, int sequence) {
+    private KnowledgeUploadResponse processSystemFile(MultipartFile file, Path projectRoot, int sequence, Long uploadedBy) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(400, "请选择要上传的系统文件");
         }
@@ -444,7 +466,7 @@ public class RagService {
         String title = String.format("SYS-%03d - %s", sequence, basename);
         String sourcePath = projectRoot.relativize(savedFile).toString();
         try {
-            IndexResult result = indexContent(title, sourcePath, sourceType, content, true);
+            IndexResult result = indexContent(title, sourcePath, sourceType, content, true, uploadedBy);
             return KnowledgeUploadResponse.builder()
                     .filename(title)
                     .sourcePath(sourcePath)
@@ -483,7 +505,7 @@ public class RagService {
         return matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
     }
 
-    private boolean isSystemSourcePath(String sourcePath) {
+    public boolean isSystemSourcePath(String sourcePath) {
         return sourcePath != null
                 && !sourcePath.startsWith(USER_UPLOAD_PREFIX)
                 && !sourcePath.startsWith(ASSISTANT_UPLOAD_PREFIX);
@@ -610,7 +632,7 @@ public class RagService {
      * 索引内容：先写入关系库（TransactionTemplate），再并行计算 embedding 并写入向量数据库。
      * 该方法可在多线程中被调用，每个调用拥有独立事务。
      */
-    private IndexResult indexContent(String title, String sourcePath, String sourceType, String content, boolean forceUpdate)
+    private IndexResult indexContent(String title, String sourcePath, String sourceType, String content, boolean forceUpdate, Long uploadedBy)
             throws Exception {
         String contentHash = sha256(INDEX_VERSION + "\n" + content);
 
@@ -627,6 +649,9 @@ public class RagService {
             document.setSourceType(sourceType);
             document.setContentHash(contentHash);
             document.setStatus(1);
+            if (uploadedBy != null && newDocument) {
+                document.setUploadedBy(uploadedBy);
+            }
             document = documentRepository.save(document);
             Long documentId = document.getId();
 

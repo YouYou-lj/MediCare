@@ -1,17 +1,33 @@
 <template>
   <div class="knowledge-manage">
-    <PageHeader title="知识库管理" subtitle="查看、编辑、删除已上传的知识库文档，支持保存后自动重新检索。系统文件（灰暗行）仅可预览，不可修改。" />
+    <PageHeader title="知识库管理" subtitle="查看、编辑、删除已上传的知识库文档，支持保存后自动重新检索。主管理员可操作全部文档，其他角色按权限灰显不可操作项。" />
 
     <el-card shadow="hover" class="data-card">
       <DataToolbar>
         <template #extra>
-          <el-button :icon="Upload" :loading="systemUploading" type="warning" plain @click="handleSystemUploadClick">
+          <el-button
+            v-if="isMainAdmin"
+            :icon="Upload"
+            :loading="systemUploading"
+            type="warning"
+            plain
+            @click="handleSystemUploadClick"
+          >
             上传系统文件
           </el-button>
-          <el-button :icon="DeleteFilled" :loading="clearingSystem" type="danger" plain @click="handleClearSystem">
+          <el-button
+            v-if="isMainAdmin"
+            :icon="DeleteFilled"
+            :loading="clearingSystem"
+            type="danger"
+            plain
+            @click="handleClearSystem"
+          >
             清空系统文件
           </el-button>
-          <el-button :icon="Refresh" :loading="reindexing" @click="handleReindex">重建全部索引</el-button>
+          <el-button v-if="isMainAdmin" :icon="Refresh" :loading="reindexing" @click="handleReindex">
+            重建全部索引
+          </el-button>
         </template>
       </DataToolbar>
 
@@ -91,7 +107,7 @@
             </template>
             <template #default="{ row }">
               <el-tag v-if="row.isSystem" type="warning" size="small" effect="plain">系统文件</el-tag>
-              <el-tag v-else type="success" size="small" effect="plain">用户上传</el-tag>
+              <el-tag v-else type="success" size="small" effect="plain">用户{{ row.uploadedBy || '-' }}上传</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="updateTime" label="更新时间" width="220" />
@@ -99,7 +115,7 @@
             <template #default="{ row }">
               <div class="action-buttons">
                 <el-button size="default" type="success" @click.stop="previewDocument(row)">预览</el-button>
-                <template v-if="!row.isSystem">
+                <template v-if="canManageRow(row)">
                   <el-button size="default" type="warning" @click.stop="editDocument(row)">编辑</el-button>
                   <el-popconfirm title="确定删除该文档？删除后不可恢复" @confirm="deleteDocument(row)">
                     <template #reference><el-button size="default" type="danger" @click.stop>删除</el-button></template>
@@ -157,7 +173,7 @@
       <div class="doc-info-bar">
         <el-tag size="small" type="info">{{ currentDoc?.filename }}</el-tag>
         <el-tag size="small" :type="currentDoc?.isSystem ? 'warning' : 'success'">
-          {{ currentDoc?.isSystem ? '系统文件 · 只读' : '用户上传' }}
+          {{ currentDoc?.isSystem ? '系统文件 · 只读' : `用户${currentDoc?.uploadedBy || '-'}上传` }}
         </el-tag>
         <el-tag size="small">{{ currentDoc?.chunkCount }} 个分块</el-tag>
       </div>
@@ -204,15 +220,23 @@ import { createRagReindex } from '../../api/ai'
 import {
   fetchAllKnowledgeDocuments,
   fetchKnowledgeDocument,
+  fetchKnowledgeDocumentPreview,
   updateKnowledgeDocument,
   deleteKnowledgeDocument,
   clearSystemKnowledgeDocuments,
   uploadSystemKnowledgeDocument
 } from '../../api/knowledge'
 import type { KnowledgeDocumentResponse } from '../../types'
+import { useUserStore } from '../../stores/user'
 import PageHeader from '../../components/PageHeader.vue'
 import DataToolbar from '../../components/DataToolbar.vue'
 import EmptyState from '../../components/EmptyState.vue'
+
+const userStore = useUserStore()
+
+const isMainAdmin = computed(() => userStore.currentUser?.id === 1)
+const isAdmin = computed(() => userStore.hasRole('admin'))
+const currentUserId = computed(() => userStore.currentUser?.id)
 
 const loading = ref(false)
 const reindexing = ref(false)
@@ -295,7 +319,14 @@ function userIndex(row: KnowledgeDocumentResponse) {
 }
 
 function rowClassName({ row }: { row: KnowledgeDocumentResponse }) {
-  return row.isSystem ? 'system-row' : ''
+  return row.isSystem && !isMainAdmin.value ? 'system-row' : ''
+}
+
+function canManageRow(row: KnowledgeDocumentResponse) {
+  if (isMainAdmin.value) return true
+  if (row.isSystem) return false
+  if (isAdmin.value) return true
+  return row.uploadedBy === currentUserId.value
 }
 
 async function loadDocuments() {
@@ -351,7 +382,7 @@ async function handleSystemUploadSubmit() {
 
 async function previewDocument(doc: KnowledgeDocumentResponse) {
   try {
-    const res = await fetchKnowledgeDocument(doc.id!)
+    const res = await fetchKnowledgeDocumentPreview(doc.id!)
     currentDoc.value = doc
     docContent.value = res.data.content
     previewDialogVisible.value = true
@@ -361,8 +392,8 @@ async function previewDocument(doc: KnowledgeDocumentResponse) {
 }
 
 async function editDocument(doc: KnowledgeDocumentResponse) {
-  if (doc.isSystem) {
-    ElMessage.warning('系统文件不可编辑')
+  if (!canManageRow(doc)) {
+    ElMessage.warning('无权编辑该文档')
     return
   }
   try {
@@ -394,8 +425,8 @@ async function saveDocument() {
 }
 
 async function deleteDocument(doc: KnowledgeDocumentResponse) {
-  if (doc.isSystem) {
-    ElMessage.warning('系统文件不可删除')
+  if (!canManageRow(doc)) {
+    ElMessage.warning('无权删除该文档')
     return
   }
   try {

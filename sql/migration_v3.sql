@@ -1,15 +1,24 @@
--- ========================================================
--- MediCare v3.0 AI 功能数据库迁移脚本
--- 适用范围：在 medicare.sql 基础上追加 AI 相关表
--- 包含：AI 对话历史、个性化推荐、用户行为分析
--- ========================================================
+/*
+ * File: migration_v3.sql
+ * Description: MediCare v3.0 AI 功能数据库迁移脚本
+ * Author: MediCare Team
+ * Date: 2026-06-26
+ * Version: 1.0.0
+ * Notes: 在 medicare.sql 基础上追加 AI 对话历史、个性化推荐、用户行为分析相关表。
+ */
+
+-- ============================================================
+-- 环境初始化
+-- ============================================================
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- ----------------------------
--- Table structure for ai_chat_session
--- ----------------------------
+-- ============================================================
+-- 创建表：ai_chat_session
+-- ============================================================
+
+-- AI 对话会话表：存储用户与 AI  assistant 的会话元数据
 CREATE TABLE IF NOT EXISTS `ai_chat_session` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '会话ID',
   `session_key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '前端会话标识（唯一）',
@@ -22,9 +31,11 @@ CREATE TABLE IF NOT EXISTS `ai_chat_session` (
   KEY `idx_ai_session_user` (`user_id`, `update_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI 对话会话表';
 
--- ----------------------------
--- Table structure for ai_chat_message
--- ----------------------------
+-- ============================================================
+-- 创建表：ai_chat_message
+-- ============================================================
+
+-- AI 对话消息表：存储会话中的用户提问与 AI 回复内容
 CREATE TABLE IF NOT EXISTS `ai_chat_message` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '消息ID',
   `session_id` bigint unsigned NOT NULL COMMENT '所属会话ID',
@@ -36,9 +47,11 @@ CREATE TABLE IF NOT EXISTS `ai_chat_message` (
   KEY `idx_ai_msg_session` (`session_id`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI 对话消息表';
 
--- ----------------------------
--- Table structure for ai_recommendation
--- ----------------------------
+-- ============================================================
+-- 创建表：ai_recommendation
+-- ============================================================
+
+-- AI 个性化推荐表：存储基于用户行为的智能待办与推荐项
 CREATE TABLE IF NOT EXISTS `ai_recommendation` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '推荐ID',
   `user_id` bigint unsigned NOT NULL COMMENT '目标用户ID',
@@ -54,9 +67,11 @@ CREATE TABLE IF NOT EXISTS `ai_recommendation` (
   KEY `idx_ai_rec_user` (`user_id`, `status`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI 个性化推荐表';
 
--- ----------------------------
--- Table structure for user_behavior_log
--- ----------------------------
+-- ============================================================
+-- 创建表：user_behavior_log
+-- ============================================================
+
+-- 用户行为日志表：记录页面访问、搜索、业务操作等行为事件
 CREATE TABLE IF NOT EXISTS `user_behavior_log` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '日志ID',
   `user_id` bigint unsigned DEFAULT NULL COMMENT '用户ID',
@@ -75,5 +90,9 @@ CREATE TABLE IF NOT EXISTS `user_behavior_log` (
   KEY `idx_behavior_user_time` (`user_id`, `create_time`),
   KEY `idx_behavior_event_time` (`event_name`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户行为日志表';
+
+-- ============================================================
+-- 恢复外键约束检查
+-- ============================================================
 
 SET FOREIGN_KEY_CHECKS = 1;

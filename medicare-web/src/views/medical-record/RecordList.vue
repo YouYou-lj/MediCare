@@ -58,8 +58,8 @@
             </template>
             <el-table-column type="index" label="序号" width="60" align="center" :resizable="false" />
             <el-table-column prop="code" label="ID" width="120" align="center" :resizable="false" />
-            <el-table-column prop="patientName" label="患者" min-width="120" :resizable="false" />
-            <el-table-column prop="doctorName" label="医生" min-width="120" :resizable="false" />
+            <el-table-column prop="patientName" label="患者" min-width="120" :resizable="false" align="center" />
+            <el-table-column prop="doctorName" label="医生" min-width="120" :resizable="false" align="center" />
             <el-table-column prop="chiefComplaint" label="主诉" min-width="220" show-overflow-tooltip :resizable="false" />
             <el-table-column prop="diagnosis" label="诊断" min-width="180" show-overflow-tooltip :resizable="false" />
             <el-table-column label="创建时间" min-width="190" :resizable="false">

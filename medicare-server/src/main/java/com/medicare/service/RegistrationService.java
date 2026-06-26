@@ -49,8 +49,7 @@ public class RegistrationService {
         Schedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new BusinessException("排班不存在"));
 
-        // 3. 分配序号
-        long seqNo = registrationRepository.countByScheduleAndNotCancelled(scheduleId) + 1;
+        // 3. 分配序号：按排班取当前最大序号 + 1，保证即使存在取消记录也不会重复，且与历史数据衔接
 
         // 4. 创建挂号记录
         Registration reg = new Registration();
@@ -58,7 +57,8 @@ public class RegistrationService {
         reg.setScheduleId(scheduleId);
         reg.setDoctorId(schedule.getDoctorId());  // 修复：从 schedule 获取 doctorId
         reg.setStatus(Registration.STATUS_WAITING);
-        reg.setSeqNo((int) seqNo);
+        int seqNo = registrationRepository.findMaxSeqNoByScheduleId(scheduleId) + 1;
+        reg.setSeqNo(seqNo);
         reg.setFee(java.math.BigDecimal.TEN);  // 默认挂号费 10 元
         reg = registrationRepository.save(reg);
         reg.setCode(CodeUtils.generateCode("REG", reg.getId()));

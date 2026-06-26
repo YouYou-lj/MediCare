@@ -58,14 +58,20 @@ public class AuthController {
 
     /**
      * 获取当前登录用户信息（前端刷新页面后恢复登录态）
+     * <p>每次从数据库重新读取，确保修改个人信息后前端能拿到最新数据。
      */
     @GetMapping("/current")
     @Operation(summary = "获取当前登录用户信息")
     public Result<SysUser> current(HttpServletRequest request) {
-        SysUser user = AuthInterceptor.getCurrentUser(request);
-        if (user != null) {
-            user.setPassword(null);
+        SysUser sessionUser = AuthInterceptor.getCurrentUser(request);
+        if (sessionUser == null) {
+            return Result.ok(null);
         }
+        // 从数据库重新读取，避免 Session 中缓存旧数据
+        SysUser user = sysUserService.findById(sessionUser.getId());
+        user.setPassword(null);
+        // 同步更新 Session，保证后续拦截器拿到的也是最新信息
+        request.getSession(false).setAttribute(AuthInterceptor.CURRENT_USER_KEY, user);
         return Result.ok(user);
     }
 }

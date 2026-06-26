@@ -291,6 +291,7 @@ export interface KnowledgeDocumentResponse {
   chunkCount: number
   status: number
   isSystem?: boolean
+  uploadedBy?: number | null
   createTime?: string
   updateTime?: string
 }

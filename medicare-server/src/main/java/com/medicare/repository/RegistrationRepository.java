@@ -70,6 +70,12 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
     long countByScheduleAndNotCancelled(@Param("scheduleId") Long scheduleId);
 
     /**
+     * 查询某排班下已分配的最大序号（用于新挂号序号衔接，避免取消导致重复）
+     */
+    @Query("SELECT COALESCE(MAX(r.seqNo), 0) FROM Registration r WHERE r.scheduleId = :scheduleId")
+    int findMaxSeqNoByScheduleId(@Param("scheduleId") Long scheduleId);
+
+    /**
      * 按日期范围统计每日挂号数
      */
     @Query(value = "SELECT DATE(r.reg_time) as reg_date, COUNT(*) as cnt FROM registration r WHERE DATE(r.reg_time) >= :startDate GROUP BY DATE(r.reg_time) ORDER BY reg_date",

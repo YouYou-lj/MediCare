@@ -67,6 +67,10 @@ systemRAGFiles/
 # Project documents not for repository push
 DOC/
 docs/baseline-screenshots/
+plan.md
+next_step_plan.md
+step.md
+skill.md
 
 # Claude / Copilot local configs
 .claude/

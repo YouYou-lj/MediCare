@@ -16,11 +16,11 @@
                 <template #empty>
                   <EmptyState icon="OfficeBuilding" title="暂无科室数据" description="点击右上角“新增科室”按钮添加" />
                 </template>
-                <el-table-column type="index" label="序号" width="60" align="center" />
+                <el-table-column type="index" label="序号" width="60" align="center" fixed="left" />
                 <el-table-column prop="code" label="ID" width="120" align="center" fixed="left" />
                 <el-table-column prop="name" label="科室名称" min-width="150" fixed="left" />
                 <el-table-column prop="location" label="位置" min-width="180" />
-                <el-table-column prop="phone" label="电话" min-width="140" />
+                <el-table-column prop="phone" label="电话" min-width="140" align="center" />
                 <el-table-column label="操作" width="160" align="center" fixed="right">
                   <template #default="{ row }">
                     <div class="basic-data__actions">
@@ -50,11 +50,11 @@
                 <template #empty>
                   <EmptyState icon="FirstAidKit" title="暂无医生数据" description="点击右上角“新增医生”按钮添加" />
                 </template>
-                <el-table-column type="index" label="序号" width="60" align="center" />
+                <el-table-column type="index" label="序号" width="60" align="center" fixed="left" />
                 <el-table-column prop="code" label="ID" width="120" align="center" fixed="left" />
-                <el-table-column prop="name" label="姓名" min-width="120" fixed="left" />
-                <el-table-column prop="departmentName" label="科室" min-width="130" />
-                <el-table-column prop="title" label="职称" min-width="140" />
+                <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" />
+                <el-table-column prop="departmentName" label="科室" min-width="130" align="center" />
+                <el-table-column prop="title" label="职称" min-width="140" align="center" />
                 <el-table-column prop="status" label="状态" min-width="110" align="center">
                   <template #default="{ row }">
                     <StatusTag :type="row.status === 1 ? 'success' : 'danger'" :label="row.status === 1 ? '在职' : '停用'" />
@@ -90,14 +90,14 @@
                 <template #empty>
                   <EmptyState icon="Calendar" title="暂无排班数据" description="点击右上角“新增排班”按钮添加" />
                 </template>
-                <el-table-column type="index" label="序号" width="60" align="center" />
+                <el-table-column type="index" label="序号" width="60" align="center" fixed="left" />
                 <el-table-column prop="code" label="ID" width="120" align="center" fixed="left" />
-                <el-table-column prop="doctorName" label="医生" min-width="120" fixed="left" />
-                <el-table-column prop="departmentName" label="科室" min-width="130" />
-                <el-table-column prop="workDate" label="日期" min-width="130" />
-                <el-table-column prop="timeSlot" label="时段" min-width="100" />
-                <el-table-column prop="totalSlots" label="总号源" min-width="100" />
-                <el-table-column prop="remainSlots" label="剩余号源" min-width="110">
+                <el-table-column prop="doctorName" label="医生" min-width="120" fixed="left" align="center" />
+                <el-table-column prop="departmentName" label="科室" min-width="130" align="center" />
+                <el-table-column prop="workDate" label="日期" min-width="130" align="center" />
+                <el-table-column prop="timeSlot" label="时段" min-width="100" align="center" />
+                <el-table-column prop="totalSlots" label="总号源" min-width="100" align="center" />
+                <el-table-column prop="remainSlots" label="剩余号源" min-width="110" align="center">
                   <template #default="{ row }">
                     <StatusTag :type="row.remainSlots > 0 ? 'success' : 'danger'" :label="String(row.remainSlots)" />
                   </template>

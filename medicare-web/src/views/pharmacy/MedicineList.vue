@@ -66,21 +66,21 @@
             <el-table-column type="index" label="序号" width="60" align="center" :resizable="false" />
             <el-table-column prop="code" label="ID" width="120" align="center" :resizable="false" />
             <el-table-column prop="name" label="药品名称" min-width="180" show-overflow-tooltip :resizable="false" />
-            <el-table-column prop="spec" label="规格" min-width="150" show-overflow-tooltip :resizable="false" />
-            <el-table-column prop="unit" label="单位" min-width="90" :resizable="false" />
+            <el-table-column prop="spec" label="规格" min-width="150" show-overflow-tooltip :resizable="false" align="center" />
+            <el-table-column prop="unit" label="单位" min-width="90" :resizable="false" align="center" />
             <el-table-column prop="stock" label="库存" min-width="130" align="center" class-name="medicine-list__tag-cell" :resizable="false">
               <template #default="{ row }">
                 <StatusTag :type="stockStatusType(row)" :label="stockStatusLabel(row)" />
               </template>
             </el-table-column>
-            <el-table-column prop="safetyStock" label="安全库存" min-width="120" :resizable="false" />
-            <el-table-column prop="price" label="零售价" min-width="110" :resizable="false">
+            <el-table-column prop="safetyStock" label="安全库存" min-width="120" :resizable="false" align="center" />
+            <el-table-column prop="price" label="零售价" min-width="110" :resizable="false" align="center">
               <template #default="{ row }">{{ formatMoney(row.price) }}</template>
             </el-table-column>
-            <el-table-column prop="expiryDate" label="有效期" min-width="130" :resizable="false">
+            <el-table-column prop="expiryDate" label="有效期" min-width="130" :resizable="false" align="center">
               <template #default="{ row }">{{ displayText(row.expiryDate) }}</template>
             </el-table-column>
-            <el-table-column prop="batchNo" label="批号" min-width="140" show-overflow-tooltip :resizable="false">
+            <el-table-column prop="batchNo" label="批号" min-width="140" show-overflow-tooltip :resizable="false" align="center">
               <template #default="{ row }">{{ displayText(row.batchNo) }}</template>
             </el-table-column>
             <el-table-column prop="manufacturer" label="厂家" min-width="220" show-overflow-tooltip :resizable="false" />

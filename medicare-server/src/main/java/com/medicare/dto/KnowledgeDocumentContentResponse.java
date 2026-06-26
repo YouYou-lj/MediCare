@@ -25,6 +25,8 @@ public class KnowledgeDocumentContentResponse {
 
     private Boolean isSystem;
 
+    private Long uploadedBy;
+
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;

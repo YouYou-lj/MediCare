@@ -32,6 +32,9 @@ public class KnowledgeDocument {
     @Column(nullable = false)
     private Integer status = 1;
 
+    @Column(name = "uploaded_by")
+    private Long uploadedBy;
+
     @Column(name = "create_time", updatable = false, insertable = false)
     private LocalDateTime createTime;
 

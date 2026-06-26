@@ -41,11 +41,11 @@
                 >
                   <el-table-column type="index" label="序号" width="60" align="center" :resizable="false" />
                   <el-table-column prop="code" label="ID" width="120" align="center" :resizable="false" />
-                  <el-table-column prop="doctorName" label="医生" width="110" :resizable="false" />
-                  <el-table-column prop="departmentName" label="科室" min-width="120" :resizable="false" />
-                  <el-table-column prop="workDate" label="日期" min-width="120" :resizable="false" />
-                  <el-table-column prop="timeSlot" label="时段" min-width="100" :resizable="false" />
-                  <el-table-column prop="remainSlots" label="剩余号源" min-width="110" :resizable="false">
+                  <el-table-column prop="doctorName" label="医生" width="110" :resizable="false" align="center" />
+                  <el-table-column prop="departmentName" label="科室" min-width="120" :resizable="false" align="center" />
+                  <el-table-column prop="workDate" label="日期" min-width="120" :resizable="false" align="center" />
+                  <el-table-column prop="timeSlot" label="时段" min-width="100" :resizable="false" align="center" />
+                  <el-table-column prop="remainSlots" label="剩余号源" min-width="110" :resizable="false" align="center">
                     <template #default="{ row }">
                       <StatusTag :type="row.remainSlots > 0 ? 'success' : 'danger'" :label="String(row.remainSlots)" />
                     </template>
@@ -98,15 +98,15 @@
                 >
                   <el-table-column type="index" label="序号" width="60" align="center" :resizable="false" />
                   <el-table-column prop="code" label="ID" width="120" align="center" :resizable="false" />
-                  <el-table-column prop="seqNo" label="排队号" width="76" :resizable="false" />
-                  <el-table-column prop="patientName" label="患者" min-width="110" :resizable="false" />
-                  <el-table-column prop="doctorName" label="医生" min-width="110" :resizable="false" />
-                  <el-table-column prop="departmentName" label="科室" min-width="120" :resizable="false" />
-                  <el-table-column prop="timeSlot" label="时段" min-width="90" :resizable="false" />
-                  <el-table-column prop="fee" label="费用" min-width="90" :resizable="false">
+                  <el-table-column prop="seqNo" label="排队号" width="76" :resizable="false" align="center" />
+                  <el-table-column prop="patientName" label="患者" min-width="110" :resizable="false" align="center" />
+                  <el-table-column prop="doctorName" label="医生" min-width="110" :resizable="false" align="center" />
+                  <el-table-column prop="departmentName" label="科室" min-width="120" :resizable="false" align="center" />
+                  <el-table-column prop="timeSlot" label="时段" min-width="90" :resizable="false" align="center" />
+                  <el-table-column prop="fee" label="费用" min-width="90" :resizable="false" align="center">
                     <template #default="{ row }">{{ formatFee(row.fee) }}</template>
                   </el-table-column>
-                  <el-table-column prop="status" label="状态" min-width="100" :resizable="false">
+                  <el-table-column prop="status" label="状态" min-width="100" :resizable="false" align="center">
                     <template #default="{ row }">
                       <StatusTag :type="statusType(row.status)" :label="statusText(row.status)" />
                     </template>
@@ -150,9 +150,9 @@
       >
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="code" label="ID" width="120" align="center" />
-        <el-table-column prop="name" label="姓名" width="80" />
+        <el-table-column prop="name" label="姓名" width="80" align="center" />
         <el-table-column prop="idCard" label="身份证号" width="170" />
-        <el-table-column prop="phone" label="手机号" width="120" />
+        <el-table-column prop="phone" label="手机号" width="120" align="center" />
         <el-table-column prop="allergyInfo" label="过敏史" />
       </el-table>
       <EmptyState v-if="!patientLoading && patientList.length === 0" icon="User" title="未找到患者" description="请先在患者管理中建档" />
