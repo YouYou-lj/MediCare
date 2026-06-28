@@ -96,7 +96,7 @@ MediCare/
 ### 1. 克隆项目
 
 ```bash
-git clone <你的仓库地址>
+git clone https://github.com/YouYou-lj/MediCare.git
 cd MediCare
 ```
 
