@@ -195,8 +195,6 @@ ai:
     distance: cosine
 ```
 
-> `application-secret.yml` 已被 `.gitignore` 忽略，请勿将其提交到 Git 仓库。
-
 #### 初始化 AI 知识库
 
 系统启动时会自动读取 `systemRAGFiles/` 目录下的 Markdown 文档，解析并向量化后存入 Qdrant。如需更新知识库：
