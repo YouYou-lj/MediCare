@@ -1,6 +1,6 @@
 <template>
   <div class="record-list">
-    <PageHeader title="病历管理" subtitle="查看已保存的病历记录" />
+    <PageHeader title="病历管理" subtitle="查看、编辑与删除已保存的病历记录" />
 
     <div class="record-list__workspace">
       <el-card shadow="hover" class="record-list__panel">
@@ -68,10 +68,14 @@
             <el-table-column label="更新时间" min-width="190" :resizable="false">
               <template #default="{ row }">{{ formatTime(row.updateTime) }}</template>
             </el-table-column>
-            <el-table-column label="操作" width="120" align="center" :resizable="false">
+            <el-table-column label="操作" width="220" align="center" :resizable="false">
               <template #default="{ row }">
                 <div class="record-list__actions">
                   <el-button size="small" type="primary" :icon="View" @click.stop="openPreview(row)">预览</el-button>
+                  <el-button size="small" type="warning" :icon="EditPen" :disabled="!canManageMedicalRecords" @click.stop="openEditDialog(row)">编辑</el-button>
+                  <el-popconfirm title="确定删除该病历? 删除后不可恢复" :disabled="!canManageMedicalRecords" @confirm="handleDelete(row.id)">
+                    <template #reference><el-button size="small" type="danger" :icon="Delete" :disabled="!canManageMedicalRecords" @click.stop>删除</el-button></template>
+                  </el-popconfirm>
                 </div>
               </template>
             </el-table-column>
@@ -116,24 +120,71 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 编辑病历弹窗 -->
+    <el-dialog
+      v-model="editVisible"
+      title="编辑病历"
+      width="720px"
+      align-center
+      class="record-list__edit-dialog"
+      destroy-on-close
+    >
+      <template v-if="editRecord">
+        <div class="record-list__edit-strip">
+          <span>患者: {{ displayText(editRecord.patientName) }}</span>
+          <span>医生: {{ displayText(editRecord.doctorName) }}</span>
+          <span>挂号ID: {{ editRecord.registrationId || '-' }}</span>
+        </div>
+        <el-form ref="editFormRef" :model="editForm" label-width="90px" class="record-list__edit-form">
+          <el-form-item label="主诉"><el-input v-model="editForm.chiefComplaint" type="textarea" :rows="2" /></el-form-item>
+          <el-form-item label="现病史"><el-input v-model="editForm.presentIllness" type="textarea" :rows="3" /></el-form-item>
+          <el-form-item label="既往史"><el-input v-model="editForm.pastHistory" /></el-form-item>
+          <el-form-item label="体格检查"><el-input v-model="editForm.physicalExam" /></el-form-item>
+          <el-form-item label="诊断"><el-input v-model="editForm.diagnosis" /></el-form-item>
+          <el-form-item label="医嘱"><el-input v-model="editForm.advice" type="textarea" :rows="2" /></el-form-item>
+        </el-form>
+      </template>
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button type="primary" :loading="editLoading" :disabled="!canManageMedicalRecords" @click="handleSave">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, reactive } from 'vue'
 import dayjs from 'dayjs'
-import { Document, User, View } from '@element-plus/icons-vue'
-import { listMedicalRecords } from '../../api/medical-record'
+import { ElMessage } from 'element-plus'
+import type { FormInstance } from 'element-plus'
+import { Delete, Document, EditPen, User, View } from '@element-plus/icons-vue'
+import { listMedicalRecords, getMedicalRecord, updateMedicalRecord, deleteMedicalRecord } from '../../api/medical-record'
 import type { MedicalRecord } from '../../types'
+import { usePermission } from '../../composables/usePermission'
 import PageHeader from '../../components/PageHeader.vue'
 import DataToolbar from '../../components/DataToolbar.vue'
 import EmptyState from '../../components/EmptyState.vue'
+
+const { canManageMedicalRecords } = usePermission()
 
 const recordList = ref<MedicalRecord[]>([])
 const keyword = ref('')
 const previewVisible = ref(false)
 const previewRecord = ref<MedicalRecord | null>(null)
 const loading = ref(false)
+const editVisible = ref(false)
+const editLoading = ref(false)
+const editFormRef = ref<FormInstance>()
+const editRecord = ref<MedicalRecord | null>(null)
+const editForm = reactive<Partial<MedicalRecord>>({
+  chiefComplaint: '',
+  presentIllness: '',
+  pastHistory: '',
+  physicalExam: '',
+  diagnosis: '',
+  advice: '',
+})
 
 const filteredList = computed(() => {
   if (!keyword.value) return recordList.value
@@ -167,6 +218,54 @@ function handleSearch() {}
 function openPreview(row: MedicalRecord) {
   previewRecord.value = row
   previewVisible.value = true
+}
+
+async function openEditDialog(row: MedicalRecord) {
+  if (!canManageMedicalRecords.value) {
+    ElMessage.warning('无权编辑病历')
+    return
+  }
+  try {
+    const res = await getMedicalRecord(row.id!)
+    editRecord.value = res.data
+    Object.assign(editForm, {
+      chiefComplaint: res.data.chiefComplaint || '',
+      presentIllness: res.data.presentIllness || '',
+      pastHistory: res.data.pastHistory || '',
+      physicalExam: res.data.physicalExam || '',
+      diagnosis: res.data.diagnosis || '',
+      advice: res.data.advice || '',
+    })
+    editVisible.value = true
+  } catch {
+    ElMessage.error('加载病历失败')
+  }
+}
+
+async function handleSave() {
+  if (!editRecord.value) return
+  editLoading.value = true
+  try {
+    await updateMedicalRecord(editRecord.value.id!, { ...editForm } as MedicalRecord)
+    ElMessage.success('病历更新成功')
+    editVisible.value = false
+    loadData()
+  } catch {
+    ElMessage.error('保存失败')
+  } finally {
+    editLoading.value = false
+  }
+}
+
+async function handleDelete(id?: number) {
+  if (!id) return
+  try {
+    await deleteMedicalRecord(id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch {
+    ElMessage.error('删除失败')
+  }
 }
 
 function displayText(value?: string | number | null) {
@@ -307,6 +406,29 @@ onMounted(loadData)
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.record-list__edit-dialog :deep(.el-dialog__body) {
+  padding: var(--space-lg);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.record-list__edit-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-table);
+  background: var(--bg-toolbar);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.record-list__edit-form :deep(.el-textarea__inner) {
+  resize: none;
 }
 
 .record-list__preview-header {

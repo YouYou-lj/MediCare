@@ -1,5 +1,6 @@
 package com.medicare.controller;
 
+import com.medicare.annotation.RateLimit;
 import com.medicare.auth.AuthInterceptor;
 import com.medicare.dto.LoginRequest;
 import com.medicare.dto.Result;
@@ -33,6 +34,7 @@ public class AuthController {
      * 密码兼容明文（迁移阶段）与 BCrypt 两种格式
      */
     @PostMapping("/login")
+    @RateLimit(limit = 10, window = 60, message = "登录尝试过于频繁，请稍后再试")
     @Operation(summary = "用户登录")
     public Result<SysUser> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         SysUser user = sysUserService.login(request.getUsername(), request.getPassword());

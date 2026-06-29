@@ -35,6 +35,7 @@
           show-refresh
           show-add
           add-label="新增药品"
+          :add-disabled="!canManagePharmacy"
           @search="loadData"
           @refresh="loadData"
           @add="openMedDialog()"
@@ -89,14 +90,14 @@
                 <div class="medicine-list__actions">
                   <div class="medicine-list__action-group">
                     <div class="medicine-list__action-row">
-                      <el-button size="small" type="success" @click.stop="openStockDialog(row, 'in')">入库</el-button>
-                      <el-button size="small" type="warning" @click.stop="openStockDialog(row, 'out')">出库</el-button>
+                      <el-button size="small" type="success" :disabled="!canManagePharmacy" @click.stop="openStockDialog(row, 'in')">入库</el-button>
+                      <el-button size="small" type="warning" :disabled="!canManagePharmacy" @click.stop="openStockDialog(row, 'out')">出库</el-button>
                     </div>
                     <div class="medicine-list__action-row">
-                      <el-button size="small" type="primary" @click.stop="openMedDialog(row)">编辑</el-button>
-                      <el-popconfirm title="确定删除该药品? 删除后不可恢复" @confirm="handleDelete(row.id)">
+                      <el-button size="small" type="primary" :disabled="!canManagePharmacy" @click.stop="openMedDialog(row)">编辑</el-button>
+                      <el-popconfirm title="确定删除该药品? 删除后不可恢复" :disabled="!canManagePharmacy" @confirm="handleDelete(row.id)">
                         <template #reference>
-                          <el-button size="small" type="danger" @click.stop>删除</el-button>
+                          <el-button size="small" type="danger" :disabled="!canManagePharmacy" @click.stop>删除</el-button>
                         </template>
                       </el-popconfirm>
                     </div>
@@ -119,61 +120,49 @@
       destroy-on-close
     >
       <template v-if="previewMedicine">
-        <div class="medicine-list__preview-header">
-          <div class="medicine-list__medicine-card">
-            <div class="medicine-list__avatar">
-              <el-icon><FirstAidKit /></el-icon>
-            </div>
-            <div class="medicine-list__medicine-info">
-              <strong>{{ previewMedicine.name }}</strong>
-              <span>{{ displayText(previewMedicine.spec) }} · {{ displayText(previewMedicine.manufacturer) }}</span>
-            </div>
-          </div>
-
-          <div class="medicine-list__stock-overview">
-            <div class="medicine-list__stock-number">
-              <span>当前库存</span>
-              <strong>{{ previewMedicine.stock }}</strong>
-            </div>
-            <StatusTag :type="stockStatusType(previewMedicine)" :label="stockStatusLabel(previewMedicine)" />
-          </div>
-
-          <el-progress
-            :percentage="stockPercentage(previewMedicine)"
-            :status="stockProgressStatus(previewMedicine)"
-            :stroke-width="10"
-            class="medicine-list__progress"
-          />
-
-          <el-descriptions :column="2" border class="medicine-list__preview-summary">
-            <el-descriptions-item label="安全库存">{{ previewMedicine.safetyStock }}</el-descriptions-item>
-            <el-descriptions-item label="库存缺口">{{ stockGap(previewMedicine) }}</el-descriptions-item>
-            <el-descriptions-item label="零售价">{{ formatMoney(previewMedicine.price) }}</el-descriptions-item>
-            <el-descriptions-item label="有效期">{{ displayText(previewMedicine.expiryDate) }}</el-descriptions-item>
-            <el-descriptions-item label="批号">{{ displayText(previewMedicine.batchNo) }}</el-descriptions-item>
-            <el-descriptions-item label="拼音码">{{ displayText(previewMedicine.pinyinCode) }}</el-descriptions-item>
-          </el-descriptions>
-        </div>
-
-        <div class="medicine-list__preview-body">
-          <section v-for="item in previewMedicineSections" :key="item.label" class="medicine-list__section">
-            <span>{{ item.label }}</span>
-            <p>{{ displayText(item.value) }}</p>
-          </section>
-
-          <section class="medicine-list__warning-panel">
-            <div class="medicine-list__warning-title">
-              <el-icon><Warning /></el-icon>
-              <span>低库存预警</span>
-            </div>
-            <div v-if="lowStockPreview.length" class="medicine-list__warning-list">
-              <div v-for="item in lowStockPreview" :key="item.id" class="medicine-list__warning-item">
-                <span>{{ item.name }}</span>
-                <strong>{{ item.stock }}/{{ item.safetyStock }}</strong>
+        <div class="medicine-list__preview-scroll">
+          <div class="medicine-list__preview-header">
+            <div class="medicine-list__medicine-card">
+              <div class="medicine-list__avatar">
+                <el-icon><FirstAidKit /></el-icon>
+              </div>
+              <div class="medicine-list__medicine-info">
+                <strong>{{ previewMedicine.name }}</strong>
+                <span>{{ displayText(previewMedicine.spec) }} · {{ displayText(previewMedicine.manufacturer) }}</span>
               </div>
             </div>
-            <p v-else class="medicine-list__warning-empty">当前结果中暂无低库存药品</p>
-          </section>
+
+            <div class="medicine-list__stock-overview">
+              <div class="medicine-list__stock-number">
+                <span>当前库存</span>
+                <strong>{{ previewMedicine.stock }}</strong>
+              </div>
+              <StatusTag :type="stockStatusType(previewMedicine)" :label="stockStatusLabel(previewMedicine)" />
+            </div>
+
+            <el-progress
+              :percentage="stockPercentage(previewMedicine)"
+              :status="stockProgressStatus(previewMedicine)"
+              :stroke-width="10"
+              class="medicine-list__progress"
+            />
+
+            <el-descriptions :column="2" border class="medicine-list__preview-summary">
+              <el-descriptions-item label="安全库存">{{ previewMedicine.safetyStock }}</el-descriptions-item>
+              <el-descriptions-item label="库存缺口">{{ stockGap(previewMedicine) }}</el-descriptions-item>
+              <el-descriptions-item label="零售价">{{ formatMoney(previewMedicine.price) }}</el-descriptions-item>
+              <el-descriptions-item label="有效期">{{ displayText(previewMedicine.expiryDate) }}</el-descriptions-item>
+              <el-descriptions-item label="批号">{{ displayText(previewMedicine.batchNo) }}</el-descriptions-item>
+              <el-descriptions-item label="拼音码">{{ displayText(previewMedicine.pinyinCode) }}</el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <div class="medicine-list__preview-body">
+            <section v-for="item in previewMedicineSections" :key="item.label" class="medicine-list__section">
+              <span>{{ item.label }}</span>
+              <p>{{ displayText(item.value) }}</p>
+            </section>
+          </div>
         </div>
       </template>
     </el-dialog>
@@ -194,7 +183,7 @@
       </el-form>
       <template #footer>
         <el-button @click="medDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="medSaveLoading" @click="saveMed">保存</el-button>
+        <el-button type="primary" :loading="medSaveLoading" :disabled="!canManagePharmacy" @click="saveMed">保存</el-button>
       </template>
     </el-dialog>
 
@@ -212,7 +201,7 @@
       </el-form>
       <template #footer>
         <el-button @click="stockDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="stockSaveLoading" @click="doStock">确认</el-button>
+        <el-button type="primary" :loading="stockSaveLoading" :disabled="!canManagePharmacy" @click="doStock">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -229,6 +218,9 @@ import PageHeader from '../../components/PageHeader.vue'
 import DataToolbar from '../../components/DataToolbar.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusTag from '../../components/StatusTag.vue'
+import { usePermission } from '../../composables/usePermission'
+
+const { canManagePharmacy } = usePermission()
 
 const tableData = ref<Medicine[]>([])
 const keyword = ref('')
@@ -251,7 +243,6 @@ const stockForm = reactive<StockRequest>({ quantity: 1, batchNo: '', expiryDate:
 const stockRules = { quantity: [{ required: true, message: '请输入数量', trigger: 'blur' }] }
 
 const lowStockCount = computed(() => tableData.value.filter(isLowStock).length)
-const lowStockPreview = computed(() => tableData.value.filter(isLowStock).slice(0, 5))
 const totalStockCount = computed(() => tableData.value.reduce((total, item) => total + (item.stock || 0), 0))
 const previewMedicineSections = computed(() => {
   const medicine = previewMedicine.value
@@ -517,25 +508,35 @@ onMounted(loadData)
   white-space: nowrap;
 }
 
-.medicine-list__preview-dialog :deep(.el-dialog__body) {
-  padding: 0;
-  height: 70vh;
-  overflow: hidden;
+.medicine-list__preview-dialog :deep(.el-dialog) {
+  height: 520px;
+  max-height: 80vh;
+  margin-top: auto !important;
+  margin-bottom: auto !important;
   display: flex;
   flex-direction: column;
 }
 
-.medicine-list__preview-header {
-  flex-shrink: 0;
+.medicine-list__preview-dialog :deep(.el-dialog__body) {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+}
+
+.medicine-list__preview-scroll {
+  height: 100%;
   padding: var(--space-lg);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.medicine-list__preview-header {
+  padding-bottom: var(--space-lg);
   border-bottom: 1px solid var(--border-light);
 }
 
 .medicine-list__preview-body {
-  flex: 1;
-  min-height: 0;
-  padding: var(--space-lg);
-  overflow-y: auto;
+  padding-top: var(--space-lg);
   display: grid;
   gap: var(--space-md);
 }
@@ -621,8 +622,7 @@ onMounted(loadData)
   margin-bottom: var(--space-lg);
 }
 
-.medicine-list__section,
-.medicine-list__warning-panel {
+.medicine-list__section {
   min-width: 0;
   padding: var(--space-md);
   border: 1px solid var(--border-light);
@@ -643,53 +643,6 @@ onMounted(loadData)
   font-size: var(--font-size-sm);
   line-height: 1.7;
   word-break: break-word;
-}
-
-.medicine-list__warning-title {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-md);
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.medicine-list__warning-list {
-  display: grid;
-  gap: var(--space-sm);
-}
-
-.medicine-list__warning-item {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-md);
-  padding: var(--space-sm) 0;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.medicine-list__warning-item:last-child {
-  border-bottom: none;
-}
-
-.medicine-list__warning-item span {
-  min-width: 0;
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.medicine-list__warning-item strong {
-  color: var(--color-danger);
-  font-size: var(--font-size-sm);
-  white-space: nowrap;
-}
-
-.medicine-list__warning-empty {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
 }
 
 .medicine-list__unit-input {
@@ -720,8 +673,8 @@ onMounted(loadData)
     min-height: 0;
   }
 
-  .medicine-list__preview-dialog :deep(.el-dialog__body) {
-    height: 80vh;
+  .medicine-list__preview-dialog :deep(.el-dialog) {
+    height: 480px;
   }
 }
 

@@ -75,10 +75,22 @@
             <version>5.2.5</version>
         </dependency>
 
-        <!-- AOP: Spring AOP + AspectJ（用于 @RequireRole 权限切面） -->
+        <!-- AOP: Spring AOP + AspectJ（用于 @RequireRole 权限切面、限流、幂等切面） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <!-- Redis: 缓存 + 分布式锁 + Session 共享 + 限流 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Spring Session Redis: 多实例 Session 共享 -->
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
         </dependency>
 
         <!-- Security Crypto: BCrypt 密码加密，不启用完整 Spring Security 过滤链 -->

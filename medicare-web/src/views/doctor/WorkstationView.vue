@@ -69,8 +69,8 @@
             <template v-else>请选择候诊患者</template>
           </div>
           <div class="workstation-view__actions">
-            <el-button type="primary" :icon="Bell" :disabled="!selectedReg || selectedReg.status !== 0" @click="handleCall">叫号</el-button>
-            <el-button type="success" :icon="CircleCheck" :disabled="!selectedReg || selectedReg.status !== 1" @click="handleComplete">完成就诊</el-button>
+            <el-button type="primary" :icon="Bell" :disabled="!selectedReg || selectedReg.status !== 0 || !canUseWorkstation" @click="handleCall">叫号</el-button>
+            <el-button type="success" :icon="CircleCheck" :disabled="!selectedReg || selectedReg.status !== 1 || !canUseWorkstation" @click="handleComplete">完成就诊</el-button>
           </div>
         </div>
       </el-card>
@@ -103,7 +103,7 @@
             <el-form-item label="诊断"><el-input v-model="recordForm.diagnosis" /></el-form-item>
             <el-form-item label="医嘱"><el-input v-model="recordForm.advice" type="textarea" :rows="2" /></el-form-item>
               <el-form-item>
-                <el-button type="primary" :icon="DocumentChecked" :loading="saveLoading" @click="saveRecord">保存病历</el-button>
+                <el-button type="primary" :icon="DocumentChecked" :loading="saveLoading" :disabled="!canUseWorkstation" @click="saveRecord">保存病历</el-button>
               </el-form-item>
             </el-form>
           </template>
@@ -131,6 +131,9 @@ import type { Doctor, Registration, MedicalRecord } from '../../types'
 import PageHeader from '../../components/PageHeader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusTag from '../../components/StatusTag.vue'
+import { usePermission } from '../../composables/usePermission'
+
+const { canUseWorkstation } = usePermission()
 
 const doctorList = ref<Doctor[]>([])
 const selectedDoctorId = ref<number>()

@@ -4,6 +4,7 @@ import com.medicare.dto.MedicalRecordVO;
 import com.medicare.entity.MedicalRecord;
 import com.medicare.exception.BusinessException;
 import com.medicare.repository.MedicalRecordRepository;
+import com.medicare.repository.PrescriptionRepository;
 import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.List;
 public class MedicalRecordService {
 
     private final MedicalRecordRepository medicalRecordRepository;
+    private final PrescriptionRepository prescriptionRepository;
 
     /** 病历列表查询（支持按患者ID或挂号ID筛选，返回含关联名称的 VO） */
     public List<MedicalRecordVO> findRecordVOList(Long patientId, Long registrationId) {
@@ -65,5 +67,14 @@ public class MedicalRecordService {
         existing.setDiagnosis(record.getDiagnosis());
         existing.setAdvice(record.getAdvice());
         return medicalRecordRepository.save(existing);
+    }
+
+    /** 删除病历 — 若已存在关联处方则禁止删除 */
+    public void delete(Long id) {
+        MedicalRecord existing = findById(id);
+        if (prescriptionRepository.findByRecordId(id).isPresent()) {
+            throw new BusinessException("该病历已关联处方，请先删除或作废相关处方后再删除病历");
+        }
+        medicalRecordRepository.delete(existing);
     }
 }

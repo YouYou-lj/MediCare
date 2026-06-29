@@ -16,3 +16,7 @@ export function createMedicalRecord(data: MedicalRecord) {
 export function updateMedicalRecord(id: number, data: MedicalRecord) {
   return request.put<any, Result<MedicalRecord>>(`/medical-records/${id}`, data)
 }
+
+export function deleteMedicalRecord(id: number) {
+  return request.delete<any, Result<void>>(`/medical-records/${id}`)
+}

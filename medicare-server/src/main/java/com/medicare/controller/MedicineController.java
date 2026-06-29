@@ -1,5 +1,7 @@
 package com.medicare.controller;
 
+import com.medicare.annotation.RateLimit;
+import com.medicare.annotation.RepeatSubmitLock;
 import com.medicare.auth.RequireRole;
 import com.medicare.dto.*;
 import com.medicare.entity.Medicine;
@@ -39,7 +41,7 @@ public class MedicineController {
 
     /** 库存预警 — 查询库存低于安全存量的药品 */
     @GetMapping("/low-stock")
-    @RequireRole({"admin", "pharmacist"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "查询库存预警药品")
     public Result<List<Medicine>> lowStock() {
         return Result.ok(medicineService.findLowStock());
@@ -77,6 +79,8 @@ public class MedicineController {
     /** 入库 — 增加库存 + 记录日志（含批次号、有效期） */
     @PostMapping("/{id}/stock-in")
     @RequireRole({"admin", "pharmacist"})
+    @RateLimit(limit = 30, window = 60, type = RateLimit.Type.USER, message = "入库操作过于频繁，请稍后再试")
+    @RepeatSubmitLock(timeout = 3, message = "正在处理入库，请勿重复提交")
     @Operation(summary = "药品入库")
     public Result<Void> stockIn(@PathVariable Long id, @Valid @RequestBody StockRequest request) {
         medicineService.stockIn(id, request.getQuantity(), request.getBatchNo(),
@@ -87,6 +91,8 @@ public class MedicineController {
     /** 出库 — 安全扣减库存（防超卖）+ 记录日志 */
     @PostMapping("/{id}/stock-out")
     @RequireRole({"admin", "pharmacist"})
+    @RateLimit(limit = 30, window = 60, type = RateLimit.Type.USER, message = "出库操作过于频繁，请稍后再试")
+    @RepeatSubmitLock(timeout = 3, message = "正在处理出库，请勿重复提交")
     @Operation(summary = "药品出库")
     public Result<Void> stockOut(@PathVariable Long id, @Valid @RequestBody StockRequest request) {
         medicineService.stockOut(id, request.getQuantity(), request.getBatchNo(),

@@ -4,7 +4,7 @@
       title="知识库上传"
       subtitle="上传门诊制度、操作说明、培训材料或业务文档，系统会解析文本并写入 AI 知识库"
     >
-      <el-button v-if="isMainAdmin" :loading="reindexing" type="primary" :icon="Refresh" @click="handleReindex">
+      <el-button :loading="reindexing" type="primary" :icon="Refresh" :disabled="!isMainAdmin" @click="handleReindex">
         重建全部索引
       </el-button>
     </PageHeader>
@@ -206,6 +206,7 @@ import type { KnowledgeDocumentResponse, KnowledgeUploadResponse } from '../../t
 import { useUserStore } from '../../stores/user'
 import PageHeader from '../../components/PageHeader.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import { usePermission } from '../../composables/usePermission'
 
 /* ── 常量 ── */
 const acceptedTypes = '.pdf,.doc,.docx,.txt,.text,.md,.pptx'
@@ -226,7 +227,7 @@ interface BatchUploadItem {
 
 /* ── 状态 ── */
 const userStore = useUserStore()
-const isMainAdmin = computed(() => userStore.currentUser?.id === 1)
+const { isMainAdmin } = usePermission()
 
 const uploadRef = ref<UploadInstance>()
 const folderInputRef = ref<HTMLInputElement>()

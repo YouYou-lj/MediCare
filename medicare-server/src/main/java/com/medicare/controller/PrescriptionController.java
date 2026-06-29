@@ -1,5 +1,7 @@
 package com.medicare.controller;
 
+import com.medicare.annotation.RateLimit;
+import com.medicare.annotation.RepeatSubmitLock;
 import com.medicare.auth.RequireRole;
 import com.medicare.dto.InventoryLogVO;
 import com.medicare.dto.PrescriptionCreateRequest;
@@ -66,6 +68,8 @@ public class PrescriptionController {
      */
     @PostMapping
     @RequireRole({"admin", "doctor"})
+    @RateLimit(limit = 30, window = 60, type = RateLimit.Type.USER, message = "开处方操作过于频繁，请稍后再试")
+    @RepeatSubmitLock(timeout = 3, message = "正在处理处方，请勿重复提交")
     @Operation(summary = "开立处方")
     public Result<Prescription> create(@Valid @RequestBody PrescriptionCreateRequest request) {
         PrescriptionCreateRequest.PrescriptionInfo info = request.getPrescription();

@@ -20,7 +20,7 @@
       <el-button v-if="showRefresh" :icon="Refresh" @click="$emit('refresh')">
         刷新
       </el-button>
-      <el-button v-if="showAdd" type="primary" :icon="Plus" @click="$emit('add')">
+      <el-button v-if="showAdd" type="primary" :icon="Plus" :disabled="addDisabled" @click="$emit('add')">
         {{ addLabel }}
       </el-button>
       <slot name="extra" />
@@ -38,6 +38,7 @@ interface Props {
   showRefresh?: boolean
   showAdd?: boolean
   addLabel?: string
+  addDisabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,7 +46,8 @@ const props = withDefaults(defineProps<Props>(), {
   searchModelValue: '',
   showRefresh: false,
   showAdd: false,
-  addLabel: '新增'
+  addLabel: '新增',
+  addDisabled: false
 })
 
 const emit = defineEmits<{

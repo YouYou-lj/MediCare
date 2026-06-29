@@ -6,26 +6,26 @@
       <DataToolbar>
         <template #extra>
           <el-button
-            v-if="isMainAdmin"
             :icon="Upload"
             :loading="systemUploading"
             type="warning"
             plain
+            :disabled="!isMainAdmin"
             @click="handleSystemUploadClick"
           >
             上传系统文件
           </el-button>
           <el-button
-            v-if="isMainAdmin"
             :icon="DeleteFilled"
             :loading="clearingSystem"
             type="danger"
             plain
+            :disabled="!isMainAdmin"
             @click="handleClearSystem"
           >
             清空系统文件
           </el-button>
-          <el-button v-if="isMainAdmin" :icon="Refresh" :loading="reindexing" @click="handleReindex">
+          <el-button :icon="Refresh" :loading="reindexing" :disabled="!isMainAdmin" @click="handleReindex">
             重建全部索引
           </el-button>
         </template>
@@ -231,12 +231,10 @@ import { useUserStore } from '../../stores/user'
 import PageHeader from '../../components/PageHeader.vue'
 import DataToolbar from '../../components/DataToolbar.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import { usePermission } from '../../composables/usePermission'
 
 const userStore = useUserStore()
-
-const isMainAdmin = computed(() => userStore.currentUser?.id === 1)
-const isAdmin = computed(() => userStore.hasRole('admin'))
-const currentUserId = computed(() => userStore.currentUser?.id)
+const { isMainAdmin, isAdmin, canManageKnowledgeRow } = usePermission()
 
 const loading = ref(false)
 const reindexing = ref(false)
@@ -323,10 +321,7 @@ function rowClassName({ row }: { row: KnowledgeDocumentResponse }) {
 }
 
 function canManageRow(row: KnowledgeDocumentResponse) {
-  if (isMainAdmin.value) return true
-  if (row.isSystem) return false
-  if (isAdmin.value) return true
-  return row.uploadedBy === currentUserId.value
+  return canManageKnowledgeRow(row)
 }
 
 async function loadDocuments() {

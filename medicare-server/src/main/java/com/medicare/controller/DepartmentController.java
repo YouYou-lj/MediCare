@@ -26,14 +26,14 @@ public class DepartmentController {
     private final DepartmentService departmentService;
 
     @GetMapping
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "查询科室列表")
     public Result<List<Department>> list() {
         return Result.ok(departmentService.findAll());
     }
 
     @GetMapping("/{id}")
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "根据ID查询科室详情")
     public Result<Department> detail(@PathVariable Long id) {
         return Result.ok(departmentService.findById(id));

@@ -5,39 +5,48 @@ import com.medicare.exception.BusinessException;
 import com.medicare.repository.SysUserRepository;
 import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
- * 系统用户服务 — 用户 CRUD + 登录校验 + 密码管理
+ * 系统用户服务 — 用户 CRUD + 登录校验 + 密码管理。
  * <p>
  * 密码策略：创建时 BCrypt 加密；登录时兼容明文和 BCrypt（迁移过渡期）；
- * 修改密码需验证旧密码
+ * 修改密码需验证旧密码。
+ * 用户信息使用 Redis 缓存，写操作后自动清理缓存。
  */
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "users")
 public class SysUserService {
 
     private final SysUserRepository sysUserRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    @Cacheable(key = "'all'", unless = "#result == null")
     public List<SysUser> findAll() {
         return sysUserRepository.findAll();
     }
 
+    @Cacheable(key = "#id", unless = "#result == null")
     public SysUser findById(Long id) {
         return sysUserRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("用户不存在"));
     }
 
+    @Cacheable(key = "#username", unless = "#result == null")
     public SysUser findByUsername(String username) {
         return sysUserRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException("用户名或密码错误"));
     }
 
     /** 创建用户 — 密码 BCrypt 加密 + 用户名唯一性校验 */
+    @CacheEvict(allEntries = true)
     public SysUser create(SysUser user) {
         if (sysUserRepository.existsByUsername(user.getUsername())) {
             throw new BusinessException("用户名已存在");
@@ -48,6 +57,7 @@ public class SysUserService {
         return sysUserRepository.save(user);
     }
 
+    @CacheEvict(allEntries = true)
     public SysUser update(Long id, SysUser user) {
         SysUser existing = findById(id);
         if (sysUserRepository.existsByUsernameAndIdNot(user.getUsername(), id)) {
@@ -62,6 +72,7 @@ public class SysUserService {
     }
 
     /** 删除用户 — 禁止删除超级管理员 admin */
+    @CacheEvict(allEntries = true)
     public void delete(Long id) {
         SysUser user = findById(id);
         if ("admin".equals(user.getUsername())) {
@@ -70,6 +81,7 @@ public class SysUserService {
         sysUserRepository.deleteById(id);
     }
 
+    @CacheEvict(allEntries = true)
     public void changePassword(Long id, String oldPassword, String newPassword) {
         SysUser user = findById(id);
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
@@ -80,7 +92,8 @@ public class SysUserService {
     }
 
     /**
-     * 登录校验（兼容明文密码和 BCrypt 密码）
+     * 登录校验（兼容明文密码和 BCrypt 密码）。
+     * 登录成功会由 AuthController 写入 Session，不缓存登录凭据。
      */
     public SysUser login(String username, String rawPassword) {
         SysUser user = findByUsername(username);

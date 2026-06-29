@@ -181,6 +181,17 @@ html, body {
   color: var(--color-warning) !important;
 }
 
+/* 禁用按钮统一为白底灰字，鼠标恢复默认样式 */
+.el-button.is-disabled:not(.is-text):not(.is-link),
+.el-button.is-disabled:not(.is-text):not(.is-link):hover,
+.el-button.is-disabled:not(.is-text):not(.is-link):focus,
+.el-button.is-disabled:not(.is-text):not(.is-link):active {
+  background-color: #ffffff !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-muted) !important;
+  cursor: default !important;
+}
+
 /* ===== 标签色覆盖 ===== */
 .el-tag--success {
   background-color: var(--color-success-light) !important;

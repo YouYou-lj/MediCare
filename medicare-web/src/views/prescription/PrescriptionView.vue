@@ -154,7 +154,7 @@
                 <el-input-number v-model="itemQty" :min="1" :max="999" class="prescription-view__quantity-input" />
                 <el-input v-model="itemUsage" placeholder="用法用量" class="prescription-view__usage-input" />
                 <el-button :icon="Search" @click="searchMeds">搜索</el-button>
-                <el-button type="primary" :icon="Plus" @click="addItem">添加</el-button>
+                <el-button type="primary" :icon="Plus" :disabled="!canManagePrescriptions" @click="addItem">添加</el-button>
               </div>
 
               <div class="prescription-view__items-wrap">
@@ -200,8 +200,8 @@
                   <el-table-column prop="usageDesc" label="用法" min-width="160" />
                   <el-table-column label="操作" width="96" fixed="right" align="center">
                     <template #default="{ $index }">
-                      <el-popconfirm title="确定移除该药品?" @confirm="removeItem($index)">
-                        <template #reference><el-button size="small" type="danger" :icon="Delete">移除</el-button></template>
+                      <el-popconfirm title="确定移除该药品?" :disabled="!canManagePrescriptions" @confirm="removeItem($index)">
+                        <template #reference><el-button size="small" type="danger" :icon="Delete" :disabled="!canManagePrescriptions">移除</el-button></template>
                       </el-popconfirm>
                     </template>
                   </el-table-column>
@@ -210,7 +210,7 @@
 
               <div class="prescription-view__editor-footer">
                 <el-text>总金额: <strong>¥{{ totalAmount.toFixed(2) }}</strong></el-text>
-                <el-button type="primary" :icon="DocumentChecked" :loading="saveLoading" :disabled="items.length === 0" @click="savePrescription">保存处方</el-button>
+                <el-button type="primary" :icon="DocumentChecked" :loading="saveLoading" :disabled="items.length === 0 || !canManagePrescriptions" @click="savePrescription">保存处方</el-button>
               </div>
             </div>
 
@@ -262,8 +262,8 @@
               <div class="prescription-view__editor-footer">
                 <el-text>总金额: <strong>¥{{ (existingPrescription.totalAmount || 0).toFixed(2) }}</strong></el-text>
                 <div class="prescription-view__editor-actions">
-                  <el-button v-if="existingPrescription.status === 0" type="success" :icon="CircleCheck" :loading="dispenseLoading" @click="handleDispense">确认取药</el-button>
-                  <el-button v-if="existingPrescription.status === 0" type="danger" :icon="Delete" :loading="cancelLoading" @click="handleCancel">作废处方</el-button>
+                  <el-button v-if="existingPrescription.status === 0" type="success" :icon="CircleCheck" :loading="dispenseLoading" :disabled="!canManagePrescriptions" @click="handleDispense">确认取药</el-button>
+                  <el-button v-if="existingPrescription.status === 0" type="danger" :icon="Delete" :loading="cancelLoading" :disabled="!canManagePrescriptions" @click="handleCancel">作废处方</el-button>
                 </div>
               </div>
             </div>
@@ -290,6 +290,9 @@ import type { Registration, Medicine, Prescription, PrescriptionItem } from '../
 import PageHeader from '../../components/PageHeader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusTag from '../../components/StatusTag.vue'
+import { usePermission } from '../../composables/usePermission'
+
+const { canManagePrescriptions } = usePermission()
 
 const completedRegs = ref<Registration[]>([])
 const selectedReg = ref<Registration | null>(null)

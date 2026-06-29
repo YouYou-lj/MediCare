@@ -9,6 +9,7 @@
         show-refresh
         show-add
         add-label="新增患者"
+        :add-disabled="!canManagePatients"
         @search="handleSearch"
         @refresh="loadData"
         @add="openDialog()"
@@ -43,11 +44,10 @@
           <el-table-column label="操作" width="160" align="center" :resizable="false">
             <template #default="{ row }">
               <div class="patient-list__actions">
-                <el-button size="small" type="primary" @click="openDialog(row)">编辑</el-button>
-                <el-popconfirm v-if="canDeletePatient" title="确定删除该患者? 删除后不可恢复" @confirm="handleDelete(row.id)">
-                  <template #reference><el-button size="small" type="danger">删除</el-button></template>
+                <el-button size="small" type="primary" :disabled="!canManagePatients" @click="openDialog(row)">编辑</el-button>
+                <el-popconfirm :disabled="!canManagePatients" title="确定删除该患者? 删除后不可恢复" @confirm="handleDelete(row.id)">
+                  <template #reference><el-button size="small" type="danger" :disabled="!canManagePatients">删除</el-button></template>
                 </el-popconfirm>
-                <el-button v-else size="small" type="danger" disabled>删除</el-button>
               </div>
             </template>
           </el-table-column>
@@ -71,24 +71,24 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saveLoading" @click="handleSave">保存</el-button>
+        <el-button type="primary" :loading="saveLoading" :disabled="!canManagePatients" @click="handleSave">保存</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import { listPatients, searchPatients, createPatient, updatePatient, deletePatient, deletePatientWithRelated } from '../../api/patient'
 import type { Patient } from '../../types'
-import { useUserStore } from '../../stores/user'
 import PageHeader from '../../components/PageHeader.vue'
 import DataToolbar from '../../components/DataToolbar.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import { usePermission } from '../../composables/usePermission'
 
-const userStore = useUserStore()
+const { canManagePatients } = usePermission()
 const tableData = ref<Patient[]>([])
 const keyword = ref('')
 const dialogVisible = ref(false)
@@ -96,7 +96,6 @@ const isEdit = ref(false)
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const saveLoading = ref(false)
-const canDeletePatient = computed(() => userStore.hasRole('admin'))
 
 const defaultForm = (): Patient => ({ idCard: '', name: '', gender: 1, birthDate: null, phone: '', address: '', allergyInfo: '' })
 const form = reactive<Patient>(defaultForm())

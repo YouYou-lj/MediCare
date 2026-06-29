@@ -1,5 +1,6 @@
 package com.medicare.service;
 
+import com.medicare.common.RedisLock;
 import com.medicare.dto.RegistrationVO;
 import com.medicare.entity.Registration;
 import com.medicare.entity.Schedule;
@@ -8,18 +9,34 @@ import com.medicare.repository.RegistrationRepository;
 import com.medicare.repository.ScheduleRepository;
 import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 挂号服务 — 挂号预约核心流程。
+ * <p>
+ * 挂号接口对同一号源加分布式锁，再结合数据库乐观锁（WHERE remain_slots > 0）
+ * 防止多实例高并发下超卖。
+ */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RegistrationService {
 
+    private static final String LOCK_PREFIX = "lock:registration:";
+    private static final Duration LOCK_EXPIRE = Duration.ofSeconds(10);
+    private static final long LOCK_WAIT_MS = 3000;
+    private static final long LOCK_RETRY_MS = 100;
+
     private final RegistrationRepository registrationRepository;
     private final ScheduleRepository scheduleRepository;
+    private final RedisLock redisLock;
+    private final DashboardService dashboardService;
 
     public List<RegistrationVO> findTodayList(LocalDate date, Integer status) {
         return registrationRepository.findTodayList(date, status);
@@ -34,35 +51,43 @@ public class RegistrationService {
     }
 
     /**
-     * 挂号 — 事务操作：原子扣减号源 + 保存挂号记录
-     * 修复：号源扣减现在在事务内执行，原项目此操作脱离事务
+     * 挂号 — 事务操作：分布式锁 + 原子扣减号源 + 保存挂号记录。
+     * 修复：号源扣减现在在事务内执行，原项目此操作脱离事务。
      */
     @Transactional
     public Registration register(Long patientId, Long scheduleId) {
-        // 1. 原子扣减号源（WHERE remain_slots > 0 防超卖）
-        int affected = scheduleRepository.decrementRemain(scheduleId);
-        if (affected == 0) {
-            throw new BusinessException("号源不足，请选择其他号源");
+        String lockKey = LOCK_PREFIX + scheduleId;
+        try (RedisLock.LockContext ignored = acquireLock(lockKey)) {
+            // 1. 原子扣减号源（WHERE remain_slots > 0 防超卖）
+            int affected = scheduleRepository.decrementRemain(scheduleId);
+            if (affected == 0) {
+                throw new BusinessException("号源不足，请选择其他号源");
+            }
+
+            // 2. 获取排班信息
+            Schedule schedule = scheduleRepository.findById(scheduleId)
+                    .orElseThrow(() -> new BusinessException("排班不存在"));
+
+            // 3. 创建挂号记录
+            Registration reg = new Registration();
+            reg.setPatientId(patientId);
+            reg.setScheduleId(scheduleId);
+            reg.setDoctorId(schedule.getDoctorId());
+            reg.setStatus(Registration.STATUS_WAITING);
+            int seqNo = registrationRepository.findMaxSeqNoByScheduleId(scheduleId) + 1;
+            reg.setSeqNo(seqNo);
+            reg.setFee(java.math.BigDecimal.TEN);
+            reg = registrationRepository.save(reg);
+            reg.setCode(CodeUtils.generateCode("REG", reg.getId()));
+            registrationRepository.save(reg);
+
+            // 清理仪表盘缓存
+            dashboardService.clearStatsCache();
+            return reg;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException("系统繁忙，请稍后重试");
         }
-
-        // 2. 获取排班信息
-        Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new BusinessException("排班不存在"));
-
-        // 3. 分配序号：按排班取当前最大序号 + 1，保证即使存在取消记录也不会重复，且与历史数据衔接
-
-        // 4. 创建挂号记录
-        Registration reg = new Registration();
-        reg.setPatientId(patientId);
-        reg.setScheduleId(scheduleId);
-        reg.setDoctorId(schedule.getDoctorId());  // 修复：从 schedule 获取 doctorId
-        reg.setStatus(Registration.STATUS_WAITING);
-        int seqNo = registrationRepository.findMaxSeqNoByScheduleId(scheduleId) + 1;
-        reg.setSeqNo(seqNo);
-        reg.setFee(java.math.BigDecimal.TEN);  // 默认挂号费 10 元
-        reg = registrationRepository.save(reg);
-        reg.setCode(CodeUtils.generateCode("REG", reg.getId()));
-        return registrationRepository.save(reg);
     }
 
     /**
@@ -104,5 +129,17 @@ public class RegistrationService {
         registrationRepository.save(reg);
         // 回增号源
         scheduleRepository.incrementRemain(reg.getScheduleId());
+
+        // 清理仪表盘缓存
+        dashboardService.clearStatsCache();
+    }
+
+    private RedisLock.LockContext acquireLock(String lockKey) throws InterruptedException {
+        RedisLock.LockContext context = redisLock.tryLock(lockKey, LOCK_EXPIRE,
+                Duration.ofMillis(LOCK_WAIT_MS), Duration.ofMillis(LOCK_RETRY_MS));
+        if (context == null) {
+            throw new BusinessException("当前号源排队人数过多，请稍后重试");
+        }
+        return context;
     }
 }

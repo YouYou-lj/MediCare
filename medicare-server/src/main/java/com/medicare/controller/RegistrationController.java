@@ -1,5 +1,7 @@
 package com.medicare.controller;
 
+import com.medicare.annotation.RateLimit;
+import com.medicare.annotation.RepeatSubmitLock;
 import com.medicare.auth.RequireRole;
 import com.medicare.dto.RegistrationVO;
 import com.medicare.dto.Result;
@@ -33,7 +35,7 @@ public class RegistrationController {
 
     /** 查询今日挂号列表（可按日期、状态筛选，默认今天） */
     @GetMapping
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "查询挂号列表")
     public Result<List<RegistrationVO>> list(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -48,6 +50,8 @@ public class RegistrationController {
      */
     @PostMapping
     @RequireRole("admin")
+    @RateLimit(limit = 30, window = 60, type = RateLimit.Type.USER, message = "挂号操作过于频繁，请稍后再试")
+    @RepeatSubmitLock(timeout = 3, message = "正在处理挂号，请勿重复提交")
     @Operation(summary = "挂号")
     public Result<Registration> register(@RequestBody Map<String, Long> body) {
         Long patientId = body.get("patientId");

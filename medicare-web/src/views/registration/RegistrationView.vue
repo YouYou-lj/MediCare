@@ -69,7 +69,7 @@
                   </template>
                   <template v-else>请选择一条号源</template>
                 </div>
-                <el-button type="primary" :disabled="!selectedSchedule" :icon="Plus" @click="openRegDialog">挂号</el-button>
+                <el-button type="primary" :disabled="!selectedSchedule || !canManageRegistration" :icon="Plus" @click="openRegDialog">挂号</el-button>
               </div>
             </div>
           </el-tab-pane>
@@ -114,8 +114,8 @@
                   <el-table-column label="操作" width="116" align="center" :resizable="false">
                     <template #default="{ row }">
                       <div class="registration-view__actions" v-if="row.status === 0">
-                        <el-popconfirm title="确定取消该挂号? 取消后号源将释放" @confirm="handleCancel(row.id)">
-                          <template #reference><el-button size="small" type="danger">取消</el-button></template>
+                        <el-popconfirm title="确定取消该挂号? 取消后号源将释放" :disabled="!canManageRegistration" @confirm="handleCancel(row.id)">
+                          <template #reference><el-button size="small" type="danger" :disabled="!canManageRegistration">取消</el-button></template>
                         </el-popconfirm>
                       </div>
                       <span v-else class="registration-view__muted">-</span>
@@ -158,7 +158,7 @@
       <EmptyState v-if="!patientLoading && patientList.length === 0" icon="User" title="未找到患者" description="请先在患者管理中建档" />
       <template #footer>
         <el-button @click="regDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="regBtnLoading" :disabled="!selectedPatient" @click="handleRegister">确认挂号</el-button>
+        <el-button type="primary" :loading="regBtnLoading" :disabled="!selectedPatient || !canManageRegistration" @click="handleRegister">确认挂号</el-button>
       </template>
     </el-dialog>
   </div>
@@ -176,6 +176,9 @@ import type { Department, Schedule, Registration, Patient } from '../../types'
 import PageHeader from '../../components/PageHeader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusTag from '../../components/StatusTag.vue'
+import { usePermission } from '../../composables/usePermission'
+
+const { canManageRegistration } = usePermission()
 
 const deptList = ref<Department[]>([])
 const schedList = ref<Schedule[]>([])

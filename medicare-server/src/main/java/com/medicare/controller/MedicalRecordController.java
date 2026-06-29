@@ -29,7 +29,7 @@ public class MedicalRecordController {
 
     /** 病历列表查询（支持按患者ID或挂号ID筛选） */
     @GetMapping
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "查询病历列表")
     public Result<List<MedicalRecordVO>> list(
             @RequestParam(required = false) Long patientId,
@@ -39,7 +39,7 @@ public class MedicalRecordController {
 
     /** 病历详情（按ID查询，返回含关联名称的 VO） */
     @GetMapping("/{id}")
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "根据ID查询病历详情")
     public Result<MedicalRecordVO> detail(@PathVariable Long id) {
         return Result.ok(medicalRecordService.findRecordVOById(id));
@@ -47,7 +47,7 @@ public class MedicalRecordController {
 
     /** 按挂号ID查询病历（医生工作站：叫号后查看该挂号的病历） */
     @GetMapping("/by-registration/{registrationId}")
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "按挂号ID查询病历")
     public Result<MedicalRecordVO> getByRegistration(@PathVariable Long registrationId) {
         return Result.ok(medicalRecordService.findRecordVOByRegistrationId(registrationId));
@@ -67,5 +67,14 @@ public class MedicalRecordController {
     @Operation(summary = "更新病历")
     public Result<MedicalRecord> update(@PathVariable Long id, @Valid @RequestBody MedicalRecord record) {
         return Result.ok(medicalRecordService.update(id, record));
+    }
+
+    /** 删除病历 */
+    @DeleteMapping("/{id}")
+    @RequireRole({"admin", "doctor"})
+    @Operation(summary = "删除病历")
+    public Result<Void> delete(@PathVariable Long id) {
+        medicalRecordService.delete(id);
+        return Result.ok();
     }
 }

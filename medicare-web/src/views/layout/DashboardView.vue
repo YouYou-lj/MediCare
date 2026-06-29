@@ -16,7 +16,6 @@
         color="#F59E0B"
       />
       <StatCard
-        v-if="isAdmin || isPharmacist"
         icon="Box"
         label="库存预警"
         :value="stats.stockAlertCount"
@@ -58,7 +57,6 @@
 
       <div class="chart-row">
         <el-card
-          v-if="isAdmin || isPharmacist"
           class="chart-card"
           shadow="hover"
         >

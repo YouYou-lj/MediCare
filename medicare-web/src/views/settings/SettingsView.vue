@@ -229,8 +229,10 @@ import PageHeader from '../../components/PageHeader.vue'
 import DataToolbar from '../../components/DataToolbar.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusTag from '../../components/StatusTag.vue'
+import { usePermission } from '../../composables/usePermission'
 
 const userStore = useUserStore()
+const { canManageUsers, canEditUser, canDeleteUser } = usePermission()
 
 // ========== 标签页 ==========
 const activeTab = ref(userStore.hasRole('admin') ? 'users' : 'profile')
@@ -309,16 +311,6 @@ function roleDisplay(user?: SysUser) {
 function roleTagType(role: string): any {
   const map: Record<string, any> = { admin: 'danger', doctor: 'primary', pharmacist: 'success' }
   return map[role] || 'info'
-}
-
-function canEditUser(row: SysUser) {
-  if (isCurrentUserMainAdmin.value) return true
-  return !isMainAdminUser(row) && row.role !== 'admin'
-}
-
-function canDeleteUser(row: SysUser) {
-  if (isCurrentUserMainAdmin.value) return true
-  return !isMainAdminUser(row) && row.role !== 'admin'
 }
 
 function filterUsers() {}

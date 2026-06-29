@@ -1,5 +1,6 @@
 package com.medicare.service;
 
+import com.medicare.common.RedisLock;
 import com.medicare.dto.InventoryLogVO;
 import com.medicare.dto.PrescriptionItemVO;
 import com.medicare.dto.PrescriptionListVO;
@@ -9,20 +10,35 @@ import com.medicare.exception.BusinessException;
 import com.medicare.repository.*;
 import com.medicare.util.CodeUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * 处方服务 — 开处方 / 取药 / 作废处方 / 库存日志。
+ * <p>
+ * 开立处方和作废处方时对涉及的药品批量加分布式锁，再结合数据库乐观锁（WHERE stock >= qty）
+ * 保证多实例并发下库存扣减安全。
+ */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PrescriptionService {
+
+    private static final String LOCK_PREFIX = "lock:medicine:";
+    private static final Duration LOCK_EXPIRE = Duration.ofSeconds(15);
+    private static final long LOCK_WAIT_MS = 5000;
+    private static final long LOCK_RETRY_MS = 100;
 
     private final PrescriptionRepository prescriptionRepository;
     private final PrescriptionItemRepository prescriptionItemRepository;
@@ -30,52 +46,66 @@ public class PrescriptionService {
     private final InventoryLogRepository inventoryLogRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
+    private final RedisLock redisLock;
+    private final DashboardService dashboardService;
 
     /**
-     * 开立处方 — 事务操作：保存处方 + 逐条扣减库存 + 记录日志 + 保存明细
-     * 修复：库存扣减使用 safeDecrementStock 原子操作
+     * 开立处方 — 事务操作：保存处方 + 批量分布式锁 + 逐条扣减库存 + 记录日志 + 保存明细。
+     * 修复：库存扣减使用 safeDecrementStock 原子操作。
      */
     @Transactional
     public Prescription createPrescription(Prescription prescription, List<PrescriptionItem> items) {
-        // 保存处方主表
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (PrescriptionItem item : items) {
-            item.setAmount(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
-            totalAmount = totalAmount.add(item.getAmount());
+        if (items == null || items.isEmpty()) {
+            throw new BusinessException("处方明细不能为空");
         }
-        prescription.setTotalAmount(totalAmount);
-        prescription.setStatus(Prescription.STATUS_PENDING);
-        prescription = prescriptionRepository.save(prescription);
-        prescription.setCode(CodeUtils.generateCode("PRE", prescription.getId()));
-        prescription = prescriptionRepository.save(prescription);
 
-        // 逐条扣减库存 + 记录日志 + 保存明细
-        for (PrescriptionItem item : items) {
-            // 安全扣减库存（WHERE stock >= :qty）
-            int affected = medicineRepository.safeDecrementStock(item.getMedicineId(), item.getQuantity());
-            if (affected == 0) {
-                throw new BusinessException("药品库存不足：ID=" + item.getMedicineId());
+        // 按药品 ID 升序排序并加锁，避免多线程死锁
+        List<Long> medicineIds = items.stream()
+                .map(PrescriptionItem::getMedicineId)
+                .distinct()
+                .sorted()
+                .toList();
+        List<RedisLock.LockContext> locks = acquireLocks(medicineIds);
+
+        try {
+            // 保存处方主表
+            BigDecimal totalAmount = BigDecimal.ZERO;
+            for (PrescriptionItem item : items) {
+                item.setAmount(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+                totalAmount = totalAmount.add(item.getAmount());
+            }
+            prescription.setTotalAmount(totalAmount);
+            prescription.setStatus(Prescription.STATUS_PENDING);
+            prescription = prescriptionRepository.save(prescription);
+            prescription.setCode(CodeUtils.generateCode("PRE", prescription.getId()));
+            prescription = prescriptionRepository.save(prescription);
+
+            // 逐条扣减库存 + 记录日志 + 保存明细
+            for (PrescriptionItem item : items) {
+                // 安全扣减库存（WHERE stock >= :qty）
+                int affected = medicineRepository.safeDecrementStock(item.getMedicineId(), item.getQuantity());
+                if (affected == 0) {
+                    throw new BusinessException("药品库存不足：ID=" + item.getMedicineId());
+                }
+
+                // 保存明细
+                item.setPrescriptionId(prescription.getId());
+                item = prescriptionItemRepository.save(item);
+                item.setCode(CodeUtils.generateCode("PIT", item.getId()));
+                prescriptionItemRepository.save(item);
+
+                // 记录库存日志
+                InventoryLog log = buildInventoryLog(item.getMedicineId(), InventoryLog.TYPE_STOCK_OUT,
+                        item.getQuantity(), "处方出库 - 处方ID:" + prescription.getId());
+                inventoryLogRepository.save(log);
             }
 
-            // 保存明细
-            item.setPrescriptionId(prescription.getId());
-            item = prescriptionItemRepository.save(item);
-            item.setCode(CodeUtils.generateCode("PIT", item.getId()));
-            prescriptionItemRepository.save(item);
-
-            // 记录库存日志
-            InventoryLog log = new InventoryLog();
-            log.setMedicineId(item.getMedicineId());
-            log.setType(InventoryLog.TYPE_STOCK_OUT);
-            log.setQuantity(item.getQuantity());
-            log.setOperator("system");
-            log.setRemark("处方出库 - 处方ID:" + prescription.getId());
-            log = inventoryLogRepository.save(log);
-            log.setCode(CodeUtils.generateCode("INV", log.getId()));
-            inventoryLogRepository.save(log);
+            // 清理仪表盘缓存
+            dashboardService.clearStatsCache();
+            return prescription;
+        } finally {
+            locks.forEach(RedisLock.LockContext::close);
         }
-
-        return prescription;
     }
 
     /**
@@ -90,7 +120,7 @@ public class PrescriptionService {
     }
 
     /**
-     * 作废处方 — 事务操作：逐条回滚库存 + 更新处方状态
+     * 作废处方 — 事务操作：批量分布式锁 + 逐条回滚库存 + 更新处方状态
      */
     @Transactional
     public void cancelPrescription(Long id) {
@@ -105,22 +135,64 @@ public class PrescriptionService {
 
         // 逐条回滚库存
         List<PrescriptionItem> items = prescriptionItemRepository.findByPrescriptionId(id);
-        for (PrescriptionItem item : items) {
-            medicineRepository.incrementStock(item.getMedicineId(), item.getQuantity());
-            // 记录库存日志
-            InventoryLog log = new InventoryLog();
-            log.setMedicineId(item.getMedicineId());
-            log.setType(InventoryLog.TYPE_STOCK_IN);
-            log.setQuantity(item.getQuantity());
-            log.setOperator("system");
-            log.setRemark("处方作废回滚 - 处方ID:" + id);
-            log = inventoryLogRepository.save(log);
-            log.setCode(CodeUtils.generateCode("INV", log.getId()));
-            inventoryLogRepository.save(log);
-        }
+        List<Long> medicineIds = items.stream()
+                .map(PrescriptionItem::getMedicineId)
+                .distinct()
+                .sorted()
+                .toList();
+        List<RedisLock.LockContext> locks = acquireLocks(medicineIds);
 
-        // 更新处方状态
-        prescriptionRepository.cancel(id);
+        try {
+            for (PrescriptionItem item : items) {
+                medicineRepository.incrementStock(item.getMedicineId(), item.getQuantity());
+                // 记录库存日志
+                InventoryLog log = buildInventoryLog(item.getMedicineId(), InventoryLog.TYPE_STOCK_IN,
+                        item.getQuantity(), "处方作废回滚 - 处方ID:" + id);
+                inventoryLogRepository.save(log);
+            }
+
+            // 更新处方状态
+            prescriptionRepository.cancel(id);
+
+            // 清理仪表盘缓存
+            dashboardService.clearStatsCache();
+        } finally {
+            locks.forEach(RedisLock.LockContext::close);
+        }
+    }
+
+    private InventoryLog buildInventoryLog(Long medicineId, Integer type, Integer quantity, String remark) {
+        InventoryLog log = new InventoryLog();
+        log.setMedicineId(medicineId);
+        log.setType(type);
+        log.setQuantity(quantity);
+        log.setOperator("system");
+        log.setRemark(remark);
+        log = inventoryLogRepository.save(log);
+        log.setCode(CodeUtils.generateCode("INV", log.getId()));
+        return inventoryLogRepository.save(log);
+    }
+
+    private List<RedisLock.LockContext> acquireLocks(List<Long> medicineIds) {
+        List<RedisLock.LockContext> locks = new ArrayList<>();
+        try {
+            for (Long medicineId : medicineIds) {
+                RedisLock.LockContext context = redisLock.tryLock(LOCK_PREFIX + medicineId, LOCK_EXPIRE,
+                        Duration.ofMillis(LOCK_WAIT_MS), Duration.ofMillis(LOCK_RETRY_MS));
+                if (context == null) {
+                    throw new BusinessException("药品操作并发量过大，请稍后重试");
+                }
+                locks.add(context);
+            }
+            return locks;
+        } catch (InterruptedException e) {
+            locks.forEach(RedisLock.LockContext::close);
+            Thread.currentThread().interrupt();
+            throw new BusinessException("系统繁忙，请稍后重试");
+        } catch (Exception e) {
+            locks.forEach(RedisLock.LockContext::close);
+            throw e;
+        }
     }
 
     /**

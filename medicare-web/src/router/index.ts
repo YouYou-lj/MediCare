@@ -20,67 +20,67 @@ const router = createRouter({
           path: 'dashboard',
           name: 'Dashboard',
           component: () => import('../views/layout/DashboardView.vue'),
-          meta: { title: '首页', icon: 'HomeFilled', roles: ['admin', 'doctor', 'pharmacist'] },
+          meta: { title: '首页', icon: 'HomeFilled' },
         },
         {
           path: 'patients',
           name: 'PatientList',
           component: () => import('../views/patient/PatientList.vue'),
-          meta: { title: '患者管理', icon: 'User', roles: ['admin', 'doctor'] },
+          meta: { title: '患者管理', icon: 'User' },
         },
         {
           path: 'basic-data',
           name: 'BasicData',
           component: () => import('../views/basic-data/BasicDataView.vue'),
-          meta: { title: '基础数据', icon: 'Folder', roles: ['admin', 'doctor'] },
+          meta: { title: '基础数据', icon: 'Folder' },
         },
         {
           path: 'registration',
           name: 'Registration',
           component: () => import('../views/registration/RegistrationView.vue'),
-          meta: { title: '挂号预约', icon: 'Calendar', roles: ['admin'] },
+          meta: { title: '挂号预约', icon: 'Calendar' },
         },
         {
           path: 'workstation',
           name: 'Workstation',
           component: () => import('../views/doctor/WorkstationView.vue'),
-          meta: { title: '医生工作站', icon: 'Monitor', roles: ['admin', 'doctor'] },
+          meta: { title: '医生工作站', icon: 'Monitor' },
         },
         {
           path: 'medical-records',
           name: 'MedicalRecordList',
           component: () => import('../views/medical-record/RecordList.vue'),
-          meta: { title: '病历管理', icon: 'Document', roles: ['admin', 'doctor'] },
+          meta: { title: '病历管理', icon: 'Document' },
         },
         {
           path: 'pharmacy',
           name: 'Pharmacy',
           component: () => import('../views/pharmacy/MedicineList.vue'),
-          meta: { title: '药品库存', icon: 'FirstAidKit', roles: ['admin', 'doctor', 'pharmacist'] },
+          meta: { title: '药品库存', icon: 'FirstAidKit' },
         },
         {
           path: 'prescriptions',
           name: 'PrescriptionList',
           component: () => import('../views/prescription/PrescriptionView.vue'),
-          meta: { title: '处方管理', icon: 'Notebook', roles: ['admin', 'doctor', 'pharmacist'] },
+          meta: { title: '处方管理', icon: 'Notebook' },
         },
         {
           path: 'settings',
           name: 'Settings',
           component: () => import('../views/settings/SettingsView.vue'),
-          meta: { title: '系统设置', icon: 'Setting', roles: ['admin', 'doctor', 'pharmacist'] },
+          meta: { title: '系统设置', icon: 'Setting' },
         },
         {
           path: 'knowledge-upload',
           name: 'KnowledgeUpload',
           component: () => import('../views/knowledge-upload/KnowledgeUploadView.vue'),
-          meta: { title: '知识库上传', icon: 'UploadFilled', roles: ['admin', 'doctor', 'pharmacist'] },
+          meta: { title: '知识库上传', icon: 'UploadFilled' },
         },
         {
           path: 'knowledge-manage',
           name: 'KnowledgeManage',
           component: () => import('../views/knowledge-manage/KnowledgeManageView.vue'),
-          meta: { title: '知识库管理', icon: 'Management', roles: ['admin', 'doctor', 'pharmacist'] },
+          meta: { title: '知识库管理', icon: 'Management' },
         },
       ],
     },
@@ -98,11 +98,6 @@ router.beforeEach(async (to, _from, next) => {
     await userStore.syncFromServer()
     if (!userStore.isLoggedIn) {
       next('/login')
-      return
-    }
-    const roles = to.meta.roles as string[] | undefined
-    if (roles && !roles.includes(userStore.currentUser!.role)) {
-      next('/dashboard')
       return
     }
   }

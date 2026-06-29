@@ -27,7 +27,7 @@ public class PatientController {
 
     /** 查询全部患者列表 */
     @GetMapping
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "查询患者列表")
     public Result<List<Patient>> list() {
         return Result.ok(patientService.findAll());
@@ -35,14 +35,14 @@ public class PatientController {
 
     /** 模糊搜索 — 按姓名/身份证号/手机号匹配 */
     @GetMapping("/search")
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "搜索患者")
     public Result<List<Patient>> search(@RequestParam String keyword) {
         return Result.ok(patientService.search(keyword));
     }
 
     @GetMapping("/{id}")
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "根据ID查询患者详情")
     public Result<Patient> detail(@PathVariable Long id) {
         return Result.ok(patientService.findById(id));

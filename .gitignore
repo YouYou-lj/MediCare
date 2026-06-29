@@ -103,3 +103,21 @@ medicare-server-archetype/libs/mockito*
 medicare-server-archetype/libs/opentest4j*
 medicare-server-archetype/libs/byte-buddy-agent*
 medicare-server-archetype/libs/objenesis*
+
+# ============================================================
+# 以下文件/目录未在仓库展示图中列出，仅在本地使用，不提交
+# 展示项：docs, medicare-server-archetype, medicare-server,
+#         medicare-web, scripts, sql, .gitignore, README.md,
+#         docker-compose.yml, generate_pdf.js
+# ============================================================
+/.claude/
+/.github/
+/artifacts/
+/design-qa.md
+/findings.md
+/insert_code.py
+/MediCare智慧医疗门诊管理系统实训创新报告.docx
+/photo/
+/progress.md
+/project_file.md
+/task_plan.md

@@ -103,6 +103,13 @@ public class GlobalExceptionHandler {
         return Result.error(409, "数据已被修改，请刷新后重试");
     }
 
+    /** 限流异常 — 返回 429 Too Many Requests */
+    @ExceptionHandler(RateLimitException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public Result<Void> handleRateLimitException(RateLimitException e) {
+        return Result.error(429, e.getMessage());
+    }
+
     /** 兜底处理 — 记录日志但返回脱敏信息，防止泄露堆栈细节 */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

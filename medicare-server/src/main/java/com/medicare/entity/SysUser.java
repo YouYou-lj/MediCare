@@ -2,6 +2,7 @@ package com.medicare.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -10,7 +11,9 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "sys_user")
-public class SysUser {
+public class SysUser implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     public static final String ROLE_ADMIN = "admin";
     public static final String ROLE_DOCTOR = "doctor";

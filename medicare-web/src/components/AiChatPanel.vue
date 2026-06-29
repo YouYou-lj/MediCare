@@ -244,7 +244,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, computed, onMounted } from 'vue'
+import { nextTick, ref, computed, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import {
@@ -559,12 +559,12 @@ async function sendMessage() {
   input.value = ''
   uploadedFile.value = null
 
-  messages.value.push({
+  messages.value.push(reactive({
     id: `${Date.now()}-user`,
     role: 'user',
     content: userInput,
     file,
-  })
+  }))
   await scrollToBottom()
 
   await sendText(backendContent, fileSourcePath)
@@ -575,12 +575,12 @@ async function sendText(content: string, fileSourcePath?: string) {
 
   loading.value = true
 
-  const assistantMessage: ChatMessage = {
+  const assistantMessage = reactive<ChatMessage>({
     id: `${Date.now()}-assistant`,
     role: 'assistant',
     content: '',
     references: []
-  }
+  })
   messages.value.push(assistantMessage)
   textBuffer = ''
   displayBuffer = ''

@@ -6,7 +6,7 @@
       <el-tabs v-model="activeTab" type="border-card" class="basic-data__tabs">
         <el-tab-pane label="科室管理" name="dept">
           <div class="basic-data__pane">
-            <DataToolbar show-refresh show-add add-label="新增科室" @refresh="loadDepts" @add="openDeptDialog()">
+            <DataToolbar show-refresh show-add add-label="新增科室" :add-disabled="!canManageBasicData" @refresh="loadDepts" @add="openDeptDialog()">
               <template #filters>
                 <el-input v-model="deptKeyword" placeholder="搜索科室名称" clearable class="basic-data__filter-input" @input="filterDepts" />
               </template>
@@ -24,9 +24,9 @@
                 <el-table-column label="操作" width="160" align="center" fixed="right">
                   <template #default="{ row }">
                     <div class="basic-data__actions">
-                      <el-button size="small" type="primary" @click="openDeptDialog(row)">编辑</el-button>
-                      <el-popconfirm title="确定删除该科室? 关联医生和排班将失效" @confirm="handleDeleteDept(row.id)">
-                        <template #reference><el-button size="small" type="danger">删除</el-button></template>
+                      <el-button size="small" type="primary" :disabled="!canManageBasicData" @click="openDeptDialog(row)">编辑</el-button>
+                      <el-popconfirm title="确定删除该科室? 关联医生和排班将失效" :disabled="!canManageBasicData" @confirm="handleDeleteDept(row.id)">
+                        <template #reference><el-button size="small" type="danger" :disabled="!canManageBasicData">删除</el-button></template>
                       </el-popconfirm>
                     </div>
                   </template>
@@ -38,7 +38,7 @@
 
         <el-tab-pane label="医生管理" name="doctor">
           <div class="basic-data__pane">
-            <DataToolbar show-refresh show-add add-label="新增医生" @refresh="loadDoctors" @add="openDoctorDialog()">
+            <DataToolbar show-refresh show-add add-label="新增医生" :add-disabled="!canManageBasicData" @refresh="loadDoctors" @add="openDoctorDialog()">
               <template #filters>
                 <el-select v-model="deptFilter" placeholder="筛选科室" clearable class="basic-data__filter-select" @change="loadDoctors">
                   <el-option v-for="d in deptList" :key="d.id" :label="d.name" :value="d.id" />
@@ -63,9 +63,9 @@
                 <el-table-column label="操作" width="160" align="center" fixed="right">
                   <template #default="{ row }">
                     <div class="basic-data__actions">
-                      <el-button size="small" type="primary" @click="openDoctorDialog(row)">编辑</el-button>
-                      <el-popconfirm title="确定删除该医生? 关联排班将失效" @confirm="handleDeleteDoctor(row.id)">
-                        <template #reference><el-button size="small" type="danger">删除</el-button></template>
+                      <el-button size="small" type="primary" :disabled="!canManageBasicData" @click="openDoctorDialog(row)">编辑</el-button>
+                      <el-popconfirm title="确定删除该医生? 关联排班将失效" :disabled="!canManageBasicData" @confirm="handleDeleteDoctor(row.id)">
+                        <template #reference><el-button size="small" type="danger" :disabled="!canManageBasicData">删除</el-button></template>
                       </el-popconfirm>
                     </div>
                   </template>
@@ -77,7 +77,7 @@
 
         <el-tab-pane label="排班管理" name="schedule">
           <div class="basic-data__pane">
-            <DataToolbar show-refresh show-add add-label="新增排班" @refresh="loadSchedules" @add="openSchedDialog()">
+            <DataToolbar show-refresh show-add add-label="新增排班" :add-disabled="!canManageBasicData" @refresh="loadSchedules" @add="openSchedDialog()">
               <template #filters>
                 <el-date-picker v-model="schedDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" class="basic-data__filter-date" @change="loadSchedules" />
                 <el-select v-model="schedDeptFilter" placeholder="筛选科室" clearable class="basic-data__filter-select" @change="loadSchedules">
@@ -105,9 +105,9 @@
                 <el-table-column label="操作" width="160" align="center" fixed="right">
                   <template #default="{ row }">
                     <div class="basic-data__actions">
-                      <el-button size="small" type="primary" @click="openSchedDialog(row)">编辑</el-button>
-                      <el-popconfirm title="确定删除该排班?" @confirm="handleDeleteSched(row.id)">
-                        <template #reference><el-button size="small" type="danger">删除</el-button></template>
+                      <el-button size="small" type="primary" :disabled="!canManageBasicData" @click="openSchedDialog(row)">编辑</el-button>
+                      <el-popconfirm title="确定删除该排班?" :disabled="!canManageBasicData" @confirm="handleDeleteSched(row.id)">
+                        <template #reference><el-button size="small" type="danger" :disabled="!canManageBasicData">删除</el-button></template>
                       </el-popconfirm>
                     </div>
                   </template>
@@ -127,7 +127,7 @@
         </el-form>
         <template #footer>
           <el-button @click="deptDialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="deptSaveLoading" @click="saveDept">保存</el-button>
+          <el-button type="primary" :loading="deptSaveLoading" :disabled="!canManageBasicData" @click="saveDept">保存</el-button>
         </template>
       </el-dialog>
 
@@ -145,7 +145,7 @@
         </el-form>
         <template #footer>
           <el-button @click="doctorDialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="doctorSaveLoading" @click="saveDoctor">保存</el-button>
+          <el-button type="primary" :loading="doctorSaveLoading" :disabled="!canManageBasicData" @click="saveDoctor">保存</el-button>
         </template>
       </el-dialog>
 
@@ -164,7 +164,7 @@
         </el-form>
         <template #footer>
           <el-button @click="schedDialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="schedSaveLoading" @click="saveSched">保存</el-button>
+          <el-button type="primary" :loading="schedSaveLoading" :disabled="!canManageBasicData" @click="saveSched">保存</el-button>
         </template>
       </el-dialog>
     </el-card>
@@ -183,6 +183,9 @@ import PageHeader from '../../components/PageHeader.vue'
 import DataToolbar from '../../components/DataToolbar.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusTag from '../../components/StatusTag.vue'
+import { usePermission } from '../../composables/usePermission'
+
+const { canManageBasicData } = usePermission()
 
 const activeTab = ref('dept')
 

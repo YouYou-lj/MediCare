@@ -113,23 +113,20 @@ const roleTagType = computed(() => {
 const todayDate = computed(() => dayjs().format('YYYY年MM月DD日'))
 
 const allMenuItems = [
-  { path: '/dashboard', title: '首页', icon: 'HomeFilled', roles: ['admin', 'doctor', 'pharmacist'] },
-  { path: '/patients', title: '患者管理', icon: 'User', roles: ['admin', 'doctor'] },
-  { path: '/basic-data', title: '基础数据', icon: 'Folder', roles: ['admin', 'doctor'] },
-  { path: '/registration', title: '挂号预约', icon: 'Calendar', roles: ['admin'] },
-  { path: '/workstation', title: '医生工作站', icon: 'Monitor', roles: ['admin', 'doctor'] },
-  { path: '/medical-records', title: '病历管理', icon: 'Document', roles: ['admin', 'doctor'] },
-  { path: '/pharmacy', title: '药品库存', icon: 'FirstAidKit', roles: ['admin', 'doctor', 'pharmacist'] },
-  { path: '/prescriptions', title: '处方管理', icon: 'Notebook', roles: ['admin', 'doctor', 'pharmacist'] },
-  { path: '/settings', title: '系统设置', icon: 'Setting', roles: ['admin', 'doctor', 'pharmacist'] },
-  { path: '/knowledge-upload', title: '知识库上传', icon: 'UploadFilled', roles: ['admin', 'doctor', 'pharmacist'] },
-  { path: '/knowledge-manage', title: '知识库管理', icon: 'Management', roles: ['admin', 'doctor', 'pharmacist'] },
+  { path: '/dashboard', title: '首页', icon: 'HomeFilled' },
+  { path: '/patients', title: '患者管理', icon: 'User' },
+  { path: '/basic-data', title: '基础数据', icon: 'Folder' },
+  { path: '/registration', title: '挂号预约', icon: 'Calendar' },
+  { path: '/workstation', title: '医生工作站', icon: 'Monitor' },
+  { path: '/medical-records', title: '病历管理', icon: 'Document' },
+  { path: '/pharmacy', title: '药品库存', icon: 'FirstAidKit' },
+  { path: '/prescriptions', title: '处方管理', icon: 'Notebook' },
+  { path: '/settings', title: '系统设置', icon: 'Setting' },
+  { path: '/knowledge-upload', title: '知识库上传', icon: 'UploadFilled' },
+  { path: '/knowledge-manage', title: '知识库管理', icon: 'Management' },
 ]
 
-const menuItems = computed(() => {
-  const role = userStore.currentUser?.role || ''
-  return allMenuItems.filter((item) => item.roles.includes(role))
-})
+const menuItems = computed(() => allMenuItems)
 
 function handleLogout() {
   userStore.clearUser()

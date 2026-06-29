@@ -6,28 +6,36 @@ import com.medicare.repository.MedicineRepository;
 import com.medicare.repository.PrescriptionRepository;
 import com.medicare.repository.RegistrationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.math.BigInteger;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 仪表盘服务 — 聚合统计数据
+ * 仪表盘服务 — 聚合统计数据。
+ * <p>
+ * 首页统计数据访问频繁，使用 Redis 缓存，过期时间由缓存管理器统一控制（默认 5 分钟）。
+ * 涉及业务数据变更时（挂号、处方、库存）由对应服务清理该缓存。
  */
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
+
+    public static final String DASHBOARD_STATS_CACHE = "dashboard:stats";
 
     private final RegistrationRepository registrationRepository;
     private final MedicineRepository medicineRepository;
     private final PrescriptionRepository prescriptionRepository;
 
     /**
-     * 聚合首页全部统计：基础数字 + 趋势 + 分布 + 低库存
+     * 聚合首页全部统计：基础数字 + 趋势 + 分布 + 低库存。
+     * 使用 cacheNames + key 组合，便于业务变更时精确清理。
      */
+    @Cacheable(value = DASHBOARD_STATS_CACHE, key = "'current'", unless = "#result == null")
     public DashboardStats getDashboardStats() {
         LocalDate today = LocalDate.now();
         LocalDate weekAgo = today.minusDays(6);
@@ -87,5 +95,13 @@ public class DashboardService {
         stats.setLowStockTopN(lowStockItems);
 
         return stats;
+    }
+
+    /**
+     * 清理仪表盘统计缓存 — 在挂号、处方、库存等数据变更后调用。
+     */
+    @CacheEvict(value = DASHBOARD_STATS_CACHE, key = "'current'")
+    public void clearStatsCache() {
+        // 仅用于触发缓存清理
     }
 }

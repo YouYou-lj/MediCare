@@ -31,7 +31,7 @@ public class ScheduleController {
 
     /** 排班列表 — 可按日期、科室筛选，返回含医生名/科室名的 VO */
     @GetMapping
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "查询排班列表")
     public Result<List<ScheduleVO>> list(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -41,7 +41,7 @@ public class ScheduleController {
 
     /** 可用号源 — 仅返回剩余号源 > 0 的排班（供挂号选择） */
     @GetMapping("/available")
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "查询可用号源")
     public Result<List<ScheduleVO>> available(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -50,7 +50,7 @@ public class ScheduleController {
     }
 
     @GetMapping("/{id}")
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "根据ID查询排班详情")
     public Result<Schedule> detail(@PathVariable Long id) {
         return Result.ok(scheduleService.findById(id));

@@ -1,5 +1,6 @@
 package com.medicare.controller;
 
+import com.medicare.annotation.RateLimit;
 import com.medicare.auth.AuthInterceptor;
 import com.medicare.dto.*;
 import com.medicare.entity.SysUser;
@@ -32,6 +33,7 @@ public class AiController {
     private final AiChatHistoryService aiChatHistoryService;
 
     @PostMapping("/chat")
+    @RateLimit(limit = 20, window = 60, type = RateLimit.Type.USER, message = "AI 对话请求过于频繁，请稍后再试")
     @Operation(summary = "AI 助手基础对话")
     public Result<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request,
                                        HttpServletRequest httpRequest) {
@@ -43,6 +45,7 @@ public class AiController {
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limit = 20, window = 60, type = RateLimit.Type.USER, message = "AI 流式对话请求过于频繁，请稍后再试")
     @Operation(summary = "AI 助手流式对话")
     public ResponseEntity<SseEmitter> streamChat(@Valid @RequestBody AiChatRequest request,
                                                  HttpServletRequest httpRequest) {
@@ -58,6 +61,7 @@ public class AiController {
     }
 
     @PostMapping("/rag/reindex")
+    @RateLimit(limit = 5, window = 300, type = RateLimit.Type.USER, message = "知识库重建过于频繁，请稍后再试")
     @Operation(summary = "重建 RAG 文档知识库")
     public Result<RagReindexResponse> reindexRag(HttpServletRequest httpRequest) {
         SysUser currentUser = AuthInterceptor.getCurrentUser(httpRequest);

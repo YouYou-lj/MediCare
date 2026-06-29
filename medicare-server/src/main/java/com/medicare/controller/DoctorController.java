@@ -28,14 +28,14 @@ public class DoctorController {
 
     /** 医生列表 — 可按科室ID筛选，返回含科室名的 VO */
     @GetMapping
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "查询医生列表")
     public Result<List<DoctorVO>> list(@RequestParam(required = false) Long deptId) {
         return Result.ok(doctorService.findDoctorVOList(deptId));
     }
 
     @GetMapping("/{id}")
-    @RequireRole({"admin", "doctor"})
+    @RequireRole({"admin", "doctor", "pharmacist"})
     @Operation(summary = "根据ID查询医生详情")
     public Result<Doctor> detail(@PathVariable Long id) {
         return Result.ok(doctorService.findById(id));
